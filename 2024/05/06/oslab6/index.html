@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.1.1">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Muse","version":"7.8.0","exturl":false,"sidebar":{"position":"left","Sidebar Display (only for Muse | Mist), available values":["always  expand for all pages automatically."],"display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="实验名称:          Lab6 并发与锁机制学生姓名:                    庄云皓 学生学号:                   22336327 1. 实验要求Assignment 1 代码复现题1.1 代码复现在本章中，我们已经实现了自旋锁和信号量机制。现在，同学们需要复现教程中的自旋锁和信号量的实现方法，分别使用二者解决一个同步互斥问题，如消失的芝士汉堡问题。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="yhzhuang">
+<meta property="og:url" content="http://example.com/2024/05/06/oslab6/index.html">
+<meta property="og:site_name" content="yhzhuang">
+<meta property="og:description" content="实验名称:          Lab6 并发与锁机制学生姓名:                    庄云皓 学生学号:                   22336327 1. 实验要求Assignment 1 代码复现题1.1 代码复现在本章中，我们已经实现了自旋锁和信号量机制。现在，同学们需要复现教程中的自旋锁和信号量的实现方法，分别使用二者解决一个同步互斥问题，如消失的芝士汉堡问题。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://gitee.com/qin_chu_yan/sysu-2024-spring-operating-system/raw/main/lab6/gallery/%E5%93%B2%E5%AD%A6%E5%AE%B6%E5%B0%B1%E9%A4%90%E9%97%AE%E9%A2%98.jpeg">
+<meta property="og:image" content="http://example.com/2024/05/06/oslab6/oslab6/1714983997122.png">
+<meta property="og:image" content="http://example.com/2024/05/06/oslab6/oslab6/1716042645677.png">
+<meta property="og:image" content="http://example.com/2024/05/06/oslab6/oslab6/1715744966610.png">
+<meta property="og:image" content="http://example.com/2024/05/06/oslab6/oslab6/1716042964914.png">
+<meta property="og:image" content="http://example.com/2024/05/06/oslab6/oslab6/1715774700068.png">
+<meta property="og:image" content="http://example.com/2024/05/06/oslab6/oslab6/1716035988152.png">
+<meta property="article:published_time" content="2024-05-06T03:08:57.706Z">
+<meta property="article:modified_time" content="2024-05-26T17:01:58.537Z">
+<meta property="article:author" content="zyh">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://gitee.com/qin_chu_yan/sysu-2024-spring-operating-system/raw/main/lab6/gallery/%E5%93%B2%E5%AD%A6%E5%AE%B6%E5%B0%B1%E9%A4%90%E9%97%AE%E9%A2%98.jpeg">
+
+<link rel="canonical" href="http://example.com/2024/05/06/oslab6/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title> | yhzhuang</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">yhzhuang</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-resources">
+
+    <a href="/resources/" rel="section"><i class="download fa-fw"></i>resources</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2024/05/06/oslab6/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="zyh">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="yhzhuang">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2024-05-06 11:08:57" itemprop="dateCreated datePublished" datetime="2024-05-06T11:08:57+08:00">2024-05-06</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2024-05-27 01:01:58" itemprop="dateModified" datetime="2024-05-27T01:01:58+08:00">2024-05-27</time>
+              </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <!---
+title:SYSU-2024操作系统lab3实验报告
+
+date:2024-03-24 23:54:26
+
+tags:os
+
+comments:true
+
+author:zyh
+--->
+
+<h1 id="实验名称-Lab6-并发与锁机制"><a href="#实验名称-Lab6-并发与锁机制" class="headerlink" title="实验名称:          Lab6 并发与锁机制"></a><strong>实验名称:          Lab6 并发与锁机制</strong></h1><p>学生姓名:                    庄云皓</p>
+<p>学生学号:                   22336327</p>
+<h2 id="1-实验要求"><a href="#1-实验要求" class="headerlink" title="1. 实验要求"></a>1. <strong>实验要求</strong></h2><h2 id="Assignment-1-代码复现题"><a href="#Assignment-1-代码复现题" class="headerlink" title="Assignment 1 代码复现题"></a><strong>Assignment 1 代码复现题</strong></h2><h3 id="1-1-代码复现"><a href="#1-1-代码复现" class="headerlink" title="1.1 代码复现"></a>1.1 代码复现</h3><p>在本章中，我们已经实现了自旋锁和信号量机制。现在，同学们需要复现教程中的自旋锁和信号量的实现方法，分别使用二者解决一个同步互斥问题，如消失的芝士汉堡问题。最后，将结果截图并说说你是怎么做的。</p>
+<h3 id="1-2-锁机制的实现"><a href="#1-2-锁机制的实现" class="headerlink" title="1.2 锁机制的实现"></a>1.2 锁机制的实现</h3><p>我们使用了原子指令 <code>xchg</code>来实现自旋锁。但是，这种方法并不是唯一的。例如，x86指令中提供了另外一个原子指令 <code>bts</code>和 <code>lock</code>前缀等，这些指令也可以用来实现锁机制。现在，同学们需要结合自己所学的知识，实现一个与本教程的实现方式不完全相同的锁机制。最后，测试你实现的锁机制，将结果截图并说说你是怎么做的。</p>
+<p>提示：在 <code>asm_utils.asm</code>中实现你自己的原子操作 <code>your_asm_atomic_exchange</code>，并在 <code>sync.cpp</code>中做相应修改。</p>
+<h2 id="Assignment-2-生产者-消费者问题"><a href="#Assignment-2-生产者-消费者问题" class="headerlink" title="Assignment 2 生产者-消费者问题"></a><strong>Assignment 2 生产者-消费者问题</strong></h2><h3 id="2-1-Race-Condition"><a href="#2-1-Race-Condition" class="headerlink" title="2.1 Race Condition"></a>2.1 Race Condition</h3><p>同学们可以任取一个生产者-消费者问题，然后在lab6的代码环境下创建多个线程来模拟这个问题。在2.1中，我们不使用任何同步互斥的工具。因此，这些线程可能会产生冲突，进而无法产生我们预期的结果。同学们需要将这个产生错误的场景呈现出来，将结果截图并说说你是怎么做的。</p>
+<h3 id="2-2-信号量解决方法"><a href="#2-2-信号量解决方法" class="headerlink" title="2.2 信号量解决方法"></a>2.2 信号量解决方法</h3><p>使用信号量解决上述你模拟的生产者-消费者问题。将结果截图并说说你是怎么做的。</p>
+<p>提示：</p>
+<p>①经典的生产者-消费者问题有读者-写者问题、有界缓冲区问题等，可任取一个来模拟。</p>
+<p>②模拟生产者-消费者问题的步骤：1、在代码中创建多个线程，分别代表生产者和消费者。2、编写生产者和消费者的线程函数。在这些函数中，根据问题的具体场景实现生产数据和消费数据的逻辑。3、创建并启动生产者和消费者线程。观察线程之间的交互并记录结果。4、展示没有使用同步互斥工具（如信号量）时，线程之间可能产生的冲突。5、使用信号量解决同步问题，并展示解决后的结果。</p>
+<p>③样例视频模拟了读者-写者问题的场景：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//模拟读错误</span></span><br><span class="line"><span class="comment">//创建线程读第1-4条记录</span></span><br><span class="line">programManager.<span class="built_in">executeThread</span>(readFirstQuote, <span class="literal">nullptr</span>, <span class="string">&quot;second thread&quot;</span>, <span class="number">1</span>);</span><br><span class="line">programManager.<span class="built_in">executeThread</span>(readSecondQuote, <span class="literal">nullptr</span>, <span class="string">&quot;third thread&quot;</span>, <span class="number">1</span>);</span><br><span class="line">programManager.<span class="built_in">executeThread</span>(readThirdQuote, <span class="literal">nullptr</span>, <span class="string">&quot;fourth thread&quot;</span>, <span class="number">1</span>);</span><br><span class="line">programManager.<span class="built_in">executeThread</span>(readFourthQuote, <span class="literal">nullptr</span>, <span class="string">&quot;fifth thread&quot;</span>, <span class="number">1</span>);</span><br><span class="line"><span class="comment">//创建线程，修改第2条和第4条记录为较长内容</span></span><br><span class="line"><span class="comment">//由于写时间较长，写线程运行时间大于RRschedule的time quantum</span></span><br><span class="line">programManager.<span class="built_in">executeThread</span>(writeSecondQuote, <span class="literal">nullptr</span>, <span class="string">&quot;sixth thread&quot;</span>, <span class="number">1</span>);</span><br><span class="line">programManager.<span class="built_in">executeThread</span>(writeFourthQuote, <span class="literal">nullptr</span>, <span class="string">&quot;seventh thread&quot;</span>, <span class="number">1</span>);</span><br><span class="line"><span class="comment">//创建线程读第2条和第4条记录</span></span><br><span class="line"><span class="comment">//发现没有读到修改后的项，而是输出了初始项</span></span><br><span class="line">programManager.<span class="built_in">executeThread</span>(readSecondQuote, <span class="literal">nullptr</span>, <span class="string">&quot;eighth thread&quot;</span>, <span class="number">1</span>);</span><br><span class="line">programManager.<span class="built_in">executeThread</span>(readFourthQuote, <span class="literal">nullptr</span>, <span class="string">&quot;ninth thread&quot;</span>, <span class="number">1</span>);</span><br></pre></td></tr></table></figure>
+
+<p>而使用信号量后，可以读到修改后的项。</p>
+<h2 id="Assignment-3-哲学家就餐问题"><a href="#Assignment-3-哲学家就餐问题" class="headerlink" title="Assignment 3 哲学家就餐问题"></a><strong>Assignment 3 哲学家就餐问题</strong></h2><p>假设有 5 个哲学家，他们的生活只是思考和吃饭。这些哲学家共用一个圆桌，每位都有一把椅子。在桌子中央有一碗米饭，在桌子上放着 5 根筷子。</p>
+<p><img src="https://gitee.com/qin_chu_yan/sysu-2024-spring-operating-system/raw/main/lab6/gallery/%E5%93%B2%E5%AD%A6%E5%AE%B6%E5%B0%B1%E9%A4%90%E9%97%AE%E9%A2%98.jpeg" alt="哲学家就餐问题"></p>
+<p>当一位哲学家思考时，他与其他同事不交流。时而，他会感到饥饿，并试图拿起与他相近的两根筷子（筷子在他和他的左或右邻居之间）。一个哲学家一次只能拿起一根筷子。显然，他不能从其他哲学家手里拿走筷子。当一个饥饿的哲学家同时拥有两根筷子时，他就能吃。在吃完后，他会放下两根筷子，并开始思考。</p>
+<h3 id="3-1-初步解决方法"><a href="#3-1-初步解决方法" class="headerlink" title="3.1 初步解决方法"></a>3.1 初步解决方法</h3><p>同学们需要在本教程的代码环境下，创建多个线程来模拟哲学家就餐的场景。然后，同学们需要结合信号量来实现理论课教材中给出的关于哲学家就餐问题的方法。最后，将结果截图并说说你是怎么做的。</p>
+<p>该方案可能导致死锁，请举例出现死锁的场景和原因，并提出一种解决死锁的方案。</p>
+<h3 id="3-2-死锁解决方法（选做）"><a href="#3-2-死锁解决方法（选做）" class="headerlink" title="3.2 死锁解决方法（选做）"></a>3.2 死锁解决方法（选做）</h3><p>虽然3.1的解决方案保证两个邻居不能同时进食，但是它可能导致死锁。现在，同学们需要想办法将死锁的场景演示出来。提出一种解决死锁的方法并实现。最后，将结果截图并说说你是怎么做的。</p>
+<p>说明：</p>
+<p>①为演示死锁场景，可以在哲学家进食的线程中添加等待时间，使哲学家们的操作更接近于同时进行。</p>
+<p>②样例视频演示了等待时间较少——正常、等待时间较长——出现死锁。</p>
+<h2 id="2-实验过程"><a href="#2-实验过程" class="headerlink" title="2. 实验过程"></a>2. <strong>实验过程</strong></h2><h3 id="Assignment1"><a href="#Assignment1" class="headerlink" title="Assignment1"></a><strong>Assignment1</strong></h3><h4 id="1-1-1自旋锁实现方法"><a href="#1-1-1自旋锁实现方法" class="headerlink" title="1.1.1自旋锁实现方法"></a>1.1.1自旋锁实现方法</h4><p>spinlock中private变量是两个线程有公用的变量bolt,初始化为0</p>
+<ul>
+<li>局部变量key初始化为1</li>
+<li>当第一个线程请求进入临界区时，将bolt和key交换，bolt为1，key为0，跳出循环进入临界区。</li>
+<li>此时其他线程如果想要进入临界区，它的key初始化为1，bolt为1，交换后key仍然为1，循环等待（自旋）</li>
+</ul>
+<p>交换的过程见关键代码部分。</p>
+<p>观察是否解决了消失的芝士汉堡问题</p>
+<h4 id="1-1-1信号量实现方法"><a href="#1-1-1信号量实现方法" class="headerlink" title="1.1.1信号量实现方法"></a>1.1.1信号量实现方法</h4><p>在include&#x2F;sync.h下定义信号量Semaphore类。类中变量couter.表示已有资源数</p>
+<ul>
+<li>P():只要counter&gt;0则把counter-&#x3D;1;如果county已经&#x3D;0则把当前线程放进等待队列，将线程状态置为blockecd</li>
+<li>V():counter++,获取等待队列队首元素并唤醒。</li>
+</ul>
+<p>在在first_thread里将semaphore 初始化为1，然后在调用 <code>mother</code>函数在<strong>mycheese_burger+&#x3D;10</strong> 前P,在print汉堡剩余量之后V防止在这段时间内汉堡被偷吃。</p>
+<h4 id="1-2-锁机制的实现-1"><a href="#1-2-锁机制的实现-1" class="headerlink" title="1.2 锁机制的实现"></a>1.2 锁机制的实现</h4><p>bts指令(bit test and set)作用就是设置内容中的一个位为1, 会首先判断该位是否已经为1，是就返回1，不是则置为1,然后返回0</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">my_spinlock_lock:</span><br><span class="line">    push ebp</span><br><span class="line">    mov ebp, esp</span><br><span class="line">    pushad</span><br><span class="line">.loop:</span><br><span class="line">    mov ebx, [ebp + 4 * 2]</span><br><span class="line">    mov edx, 0</span><br><span class="line">    lock bts dword [ebx], edx;test and set 第零位；若为0则将其置1，并将原来的值保存进CF,</span><br><span class="line">    ;第零位若为1则 CF = 1</span><br><span class="line"></span><br><span class="line">    jc .loop ;CF为1则跳转</span><br><span class="line"></span><br><span class="line">    popad</span><br><span class="line">    pop ebp</span><br><span class="line">    ret</span><br></pre></td></tr></table></figure>
+
+<p>观察这段上锁的函数，我们 <code>.loop</code>循环中，<code>[ebx]</code>的值是传进函数的参数，即 <code>bolt</code>变量。<code>bts</code>语句的作用是首先判断 <code>bolt</code>是否为0，如果是的话就将其改为1，将CF寄存器置0，如果是1则bolt不变，CF &#x3D; 1</p>
+<p>这段代码能实现互斥访问的原因是：初始化bolt为0，如果一个进程在进入临界区时会将bolt改为1，如果此时被另一个进程抢占的话，bolt就仍然为1，循环等待。直到原进程调用 <code>unlock</code>函数将bolt置为0，另一个进程才能跳出.loop循环，进入临界区域。bts指令保证了操作的原子性。</p>
+<h3 id="Assignment2"><a href="#Assignment2" class="headerlink" title="Assignment2"></a><strong>Assignment2</strong></h3><h4 id="Assignment-2-1"><a href="#Assignment-2-1" class="headerlink" title="Assignment 2.1"></a>Assignment 2.1</h4><p>一个错误场景：</p>
+<p>观察下面这段代码：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">void</span> <span class="title">producer</span><span class="params">(<span class="type">void</span>* arg)</span></span>&#123;</span><br><span class="line">    <span class="keyword">while</span>(<span class="literal">true</span>)&#123;</span><br><span class="line">        <span class="keyword">if</span>(cnt &lt; MAX_BUFFER_SIZE)&#123;</span><br><span class="line">            <span class="type">int</span> delay = <span class="number">0xffffff</span>;</span><br><span class="line">            <span class="keyword">while</span>(delay)&#123;</span><br><span class="line">                delay--;</span><br><span class="line">            &#125;</span><br><span class="line">            buffer[cnt] = <span class="number">1</span>;</span><br><span class="line">            cnt++;</span><br><span class="line">            <span class="built_in">printf</span>(<span class="string">&quot;produced an item, cnt = %d\n&quot;</span>,cnt);</span><br><span class="line">            <span class="keyword">if</span>(cnt &gt; MAX_BUFFER_SIZE)&#123;</span><br><span class="line">                <span class="built_in">printf</span>(<span class="string">&quot;overflow\n&quot;</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>没有实现PV操作时的错误场景：</p>
+<p>可以看到当前buffer数组中的元素已经有MAX_SIZE-1个时，一个线程判断if(cnt&lt;MAX_SIZE)符合条件进入，在cnt++之前被调度下处理器。</p>
+<p>另外一个线程调度上处理器，同样满足if(cnt&lt;MAX_SIZE)的条件，进入临界区域，cnt++。</p>
+<p>之前被调度下来的进程重新进入running状态时cnt也++,导致cnt&gt;MAX_SIZE,出现溢出。</p>
+<p>underflow的情况以此类推。</p>
+<h4 id="Assignment-2-2"><a href="#Assignment-2-2" class="headerlink" title="Assignment 2.2"></a>Assignment 2.2</h4><p>信号量解决方案：</p>
+<p>三个信号量</p>
+<ul>
+<li><code>empty_slots</code>：初始化值为MAX_SIZE</li>
+<li><code>full_slots</code>: 初始化值为0</li>
+<li><code>mutex</code>:初始化值为1</li>
+</ul>
+<p>每次进入临界区之前，<code>empty_slots.P()</code>使empty_slots.counter–， mutex.P()保证互斥访问。如果不加 <code>mutex.P()</code>的话，可能出现的情况是：MAX_SIZE大于等于2时，那么就可能有多个线程进入product的核心代码段，产生常见的资源共享问题。</p>
+<p>从临界区出来时，要把full_slots++，mutex解锁。</p>
+<p>这里要注意的是：<code>empty_slots.P()</code>和 <code>mutex.P()</code>不能交换顺序，这是因为，如果交换顺序，buffer为满时会死锁，因为当一个线程进入了临界区，mutex上锁，empty_slots-&gt;counter&#x3D;MAX_SIZE-1,循环等待，此时切换到另一个线程，因为已经上锁的缘故无法进行生产的.</p>
+<p>同理 <code>full_slots.P()</code>和 <code>mutex.P()</code>也不能交换顺序</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">empty_slots.<span class="built_in">P</span>();</span><br><span class="line">mutex.<span class="built_in">P</span>();</span><br><span class="line">buffer[cnt] = <span class="number">1</span>;</span><br><span class="line">cnt++;</span><br><span class="line">mutex.<span class="built_in">V</span>();</span><br><span class="line">full_slots.<span class="built_in">V</span>();</span><br></pre></td></tr></table></figure>
+
+<h3 id="Assignment-3"><a href="#Assignment-3" class="headerlink" title="Assignment 3"></a><strong>Assignment 3</strong></h3><p>3.1</p>
+<p>五个线程模拟五个哲学家，设置容量为5的信号量数组模拟筷子。对哲学家按顺序从 <code>0～4</code>编号，哲学家i左边的筷子的编号为i，哲学家右边的筷子的编号为 <code>(i+l)%5</code>。</p>
+<p>算法存在以下问题：当五个哲学家都想要进餐，分别拿起他们左边筷子的时候（都恰好执行完 <code>chopstick[i].wait();</code>)筷子已经被拿光了，等到他们再想拿右边的筷子的时候（执行 <code>wait(chopstick[(i+l)%5].wait()</code>)就全被阻塞了，这就出现了死锁。</p>
+<p>3.2</p>
+<ul>
+<li>solution1</li>
+</ul>
+<p>一共有五个哲学家，只允许四位哲学家同时处于拿起筷子的状态，这样就不会出现有五个哲学家全都拿起左边的筷子导致死锁或者都拿起右边的筷子的情形。</p>
+<p>需要设置一个信号量num,初始化为4，在拿起筷子前num.P(),放下筷子之后num.V()</p>
+<ul>
+<li>solution2</li>
+</ul>
+<p>解决这个问题有个办法是在拿起筷子前先判断左右两个筷子是否可用，可用才能拿，而且是同时拿，这样不相邻的哲学家就可以吃上饭，不会造成死锁。</p>
+<p>实现这个思路又有两种具体的策略</p>
+<ul>
+<li><ul>
+<li>i 条件 <code>(chopsticks[lhs].getcounter() &amp;&amp;chopsticks[rhs].getcounter())</code>成立才把左边和右边的筷子进行P操作。</li>
+<li>ii采用另一个信号量 <code>mutex</code>进行控制，保证拿起左右手的筷子这一操作变为原子的，不能多个线程同时进行拿起左右手筷子的操作</li>
+</ul>
+</li>
+</ul>
+<h2 id="3-关键代码"><a href="#3-关键代码" class="headerlink" title="3. 关键代码"></a>3. <strong>关键代码</strong></h2><h3 id="Assignment-1"><a href="#Assignment-1" class="headerlink" title="Assignment 1"></a><strong>Assignment 1</strong></h3><p>1.1</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">; void asm_atomic_exchange(uint32 *register, uint32 *memeory);</span><br><span class="line">asm_atomic_exchange:</span><br><span class="line">    push ebp</span><br><span class="line">    mov ebp, esp</span><br><span class="line">    pushad</span><br><span class="line"></span><br><span class="line">    mov ebx, [ebp + 4 * 2] ; register</span><br><span class="line">    mov eax, [ebx]      ; 取出register指向的变量的值</span><br><span class="line">    mov ebx, [ebp + 4 * 3] ; memory</span><br><span class="line">    xchg [ebx], eax      ; 原子交换指令</span><br><span class="line">    mov ebx, [ebp + 4 * 2] ; memory</span><br><span class="line">    mov [ebx], eax      ; 将memory指向的值赋值给register指向的变量</span><br><span class="line"></span><br><span class="line">    popad</span><br><span class="line">    pop ebp</span><br><span class="line">    ret</span><br></pre></td></tr></table></figure>
+
+<p>信号量解决方案：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line">Semaphore semaphore;</span><br><span class="line"></span><br><span class="line"><span class="type">int</span> cheese_burger;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">a_mother</span><span class="params">(<span class="type">void</span> *arg)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    semaphore.<span class="built_in">P</span>();</span><br><span class="line">    <span class="type">int</span> delay = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;mother: start to make cheese burger, there are %d cheese burger now\n&quot;</span>, cheese_burger);</span><br><span class="line">    <span class="comment">// make 10 cheese_burger</span></span><br><span class="line">    cheese_burger += <span class="number">10</span>;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;mother: oh, I have to hang clothes out.\n&quot;</span>);</span><br><span class="line">    <span class="comment">// hanging clothes out</span></span><br><span class="line">    delay = <span class="number">0xfffffff</span>;</span><br><span class="line">    <span class="keyword">while</span> (delay)</span><br><span class="line">        --delay;</span><br><span class="line">    <span class="comment">// done</span></span><br><span class="line"></span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;mother: Oh, Jesus! There are %d cheese burgers\n&quot;</span>, cheese_burger);</span><br><span class="line">    semaphore.<span class="built_in">V</span>();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">a_naughty_boy</span><span class="params">(<span class="type">void</span> *arg)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    semaphore.<span class="built_in">P</span>();</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;boy   : Look what I found!\n&quot;</span>);</span><br><span class="line">    <span class="comment">// eat all cheese_burgers out secretly</span></span><br><span class="line">    cheese_burger -= <span class="number">10</span>;</span><br><span class="line">    <span class="comment">// run away as fast as possible</span></span><br><span class="line">    semaphore.<span class="built_in">V</span>();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>1.2</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">my_spinlock_lock:</span><br><span class="line">    push ebp</span><br><span class="line">    mov ebp, esp</span><br><span class="line">    pushad</span><br><span class="line">.loop:</span><br><span class="line">    mov ebx, [ebp + 4 * 2]</span><br><span class="line">    mov eax, 1</span><br><span class="line">    mov edx, 0</span><br><span class="line">    lock bts dword [ebx], edx;test and set 第零位；若为0则将其置1，并将原来的值保存进CF,</span><br><span class="line">    ;第零位若为1则 CF = 1</span><br><span class="line"></span><br><span class="line">    jc .loop ;CF为1则跳转</span><br><span class="line"></span><br><span class="line">    popad</span><br><span class="line">    pop ebp</span><br><span class="line">    ret</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<h3 id="Assignment2-1"><a href="#Assignment2-1" class="headerlink" title="Assignment2"></a><strong>Assignment2</strong></h3><p>2.1</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta"># <span class="keyword">define</span> MAX_BUFFER_SIZE 1</span></span><br><span class="line"><span class="type">int</span> buffer[MAX_BUFFER_SIZE];</span><br><span class="line"><span class="type">int</span> cnt = <span class="number">0</span>;</span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">producer</span><span class="params">(<span class="type">void</span>* arg)</span></span>&#123;</span><br><span class="line">    <span class="keyword">while</span>(<span class="literal">true</span>)&#123;</span><br><span class="line">        <span class="keyword">if</span>(cnt &lt; MAX_BUFFER_SIZE)&#123;</span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">            <span class="type">int</span> delay = <span class="number">0xffffff</span>;</span><br><span class="line">            <span class="keyword">while</span>(delay)&#123;</span><br><span class="line">                delay--;</span><br><span class="line">            &#125;</span><br><span class="line">            buffer[cnt] = <span class="number">1</span>;</span><br><span class="line">            cnt++;</span><br><span class="line">            <span class="built_in">printf</span>(<span class="string">&quot;produced an item, cnt = %d\n&quot;</span>,cnt);</span><br><span class="line">            <span class="keyword">if</span>(cnt &gt; MAX_BUFFER_SIZE)&#123;</span><br><span class="line">                <span class="built_in">printf</span>(<span class="string">&quot;overflow\n&quot;</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">consumer</span><span class="params">(<span class="type">void</span>* arg)</span></span>&#123;</span><br><span class="line">    <span class="keyword">while</span>(<span class="literal">true</span>)&#123;</span><br><span class="line">        <span class="keyword">if</span>(cnt &gt; <span class="number">0</span>)&#123;</span><br><span class="line"></span><br><span class="line">            <span class="type">int</span> delay = <span class="number">0xffffff</span>;</span><br><span class="line">            <span class="keyword">while</span>(delay)&#123;</span><br><span class="line">                delay--;</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            cnt--;</span><br><span class="line">            <span class="built_in">printf</span>(<span class="string">&quot;consumerd an item, cnt = %d\n&quot;</span>,cnt);</span><br><span class="line">            <span class="keyword">if</span>(cnt&lt;<span class="number">0</span>)&#123;</span><br><span class="line">                <span class="built_in">printf</span>(<span class="string">&quot;underflow\n&quot;</span>);</span><br><span class="line">            &#125;</span><br><span class="line">            buffer[cnt] = <span class="number">0</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>2.2</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta"># <span class="keyword">define</span> MAX_BUFFER_SIZE 1</span></span><br><span class="line"><span class="type">int</span> buffer[MAX_BUFFER_SIZE];</span><br><span class="line"><span class="type">int</span> cnt = <span class="number">0</span>;</span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">producer</span><span class="params">(<span class="type">void</span>* arg)</span></span>&#123;</span><br><span class="line">    <span class="keyword">while</span>(<span class="literal">true</span>)&#123;</span><br><span class="line">        <span class="comment">//if(cnt &lt; MAX_BUFFER_SIZE)&#123;</span></span><br><span class="line">            <span class="type">int</span> delay = <span class="number">0xffffff</span>;</span><br><span class="line">            <span class="keyword">while</span>(delay)&#123;</span><br><span class="line">                delay--;</span><br><span class="line">            &#125;</span><br><span class="line">            empty_slots.<span class="built_in">P</span>();</span><br><span class="line">            mutex.<span class="built_in">P</span>();</span><br><span class="line">            buffer[cnt] = <span class="number">1</span>;</span><br><span class="line">            cnt++;</span><br><span class="line">            mutex.<span class="built_in">V</span>();</span><br><span class="line">            full_slots.<span class="built_in">V</span>();</span><br><span class="line">            <span class="built_in">printf</span>(<span class="string">&quot;produced an item, cnt = %d\n&quot;</span>,cnt);</span><br><span class="line">            <span class="keyword">if</span>(cnt &gt; MAX_BUFFER_SIZE)&#123;</span><br><span class="line">                <span class="built_in">printf</span>(<span class="string">&quot;overflow\n&quot;</span>);</span><br><span class="line">        &#125;</span><br><span class="line">       <span class="comment">// &#125;</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">consumer</span><span class="params">(<span class="type">void</span>* arg)</span></span>&#123;</span><br><span class="line">    <span class="keyword">while</span>(<span class="literal">true</span>)&#123;</span><br><span class="line">        <span class="comment">//if(cnt &gt; 0)&#123;</span></span><br><span class="line">            full_slots.<span class="built_in">P</span>();<span class="comment">// 等待缓冲区有空闲位置， 在使用PV操作时，条件变量需要在互斥锁之前</span></span><br><span class="line">            mutex.<span class="built_in">P</span>(); <span class="comment">// 保证在product时不会有其他线程访问缓冲区</span></span><br><span class="line">            <span class="type">int</span> delay = <span class="number">0xffffff</span>;</span><br><span class="line">            <span class="keyword">while</span>(delay)&#123;</span><br><span class="line">                delay--;</span><br><span class="line">            &#125;</span><br><span class="line">            cnt--;</span><br><span class="line">            buffer[cnt] = <span class="number">0</span>;</span><br><span class="line">            mutex.<span class="built_in">V</span>();</span><br><span class="line">            empty_slots.<span class="built_in">V</span>(); <span class="comment">// 通知consumer缓冲区有资源可以取走</span></span><br><span class="line">            <span class="built_in">printf</span>(<span class="string">&quot;consumerd an item, cnt = %d\n&quot;</span>,cnt);</span><br><span class="line">            <span class="keyword">if</span>(cnt&lt;<span class="number">0</span>)&#123;</span><br><span class="line">                <span class="built_in">printf</span>(<span class="string">&quot;underflow\n&quot;</span>);</span><br><span class="line">            &#125;</span><br><span class="line">        <span class="comment">//&#125;</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="Assignment3"><a href="#Assignment3" class="headerlink" title="Assignment3"></a><strong>Assignment3</strong></h3><p>3.2-solution1</p>
+<p>num初始化为4，在拿起筷子前num.P(),放下筷子之后num.V()</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">Semaphore eaters;</span><br><span class="line"><span class="type">int</span> cnt = <span class="number">0</span>;</span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">philosopher</span><span class="params">(<span class="type">int</span> id)</span></span>&#123;</span><br><span class="line">    <span class="keyword">while</span>(<span class="literal">true</span>)&#123;</span><br><span class="line">        <span class="type">int</span> delay =<span class="number">0xffffff</span>;</span><br><span class="line">        num.<span class="built_in">P</span>();</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;philosopher%d is hungry    &quot;</span>,id);</span><br><span class="line">  </span><br><span class="line">        chopsticks[id].<span class="built_in">P</span>();</span><br><span class="line">        <span class="keyword">while</span>(delay&gt;<span class="number">0</span>)&#123;</span><br><span class="line">            delay--;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//printf(&quot;philosopher%d picked up chopstick%d\n&quot;,id,id);</span></span><br><span class="line">        chopsticks[(id+<span class="number">1</span>)%MAX_SIZE].<span class="built_in">P</span>();</span><br><span class="line">  </span><br><span class="line">        <span class="comment">//printf(&quot;philosopher%d picked up chopstick%d\n&quot;,id,(id+1)%MAX_SIZE);</span></span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;philosopher%d is eating\n&quot;</span>,id);</span><br><span class="line">        chopsticks[(id+<span class="number">1</span>)%MAX_SIZE].<span class="built_in">V</span>();</span><br><span class="line">        <span class="comment">//printf(&quot;philosopher%d lowered chopstick%d\n&quot;,id,id);</span></span><br><span class="line">        chopsticks[id].<span class="built_in">V</span>();</span><br><span class="line">        num.<span class="built_in">V</span>();</span><br><span class="line">        <span class="comment">//printf(&quot;philosopher%d lowered chopstick%d\n&quot;,id,(id+1)%MAX_SIZE);</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>3.2-solution2</p>
+<p>mutex-&gt;counter初始化为1，保证一个哲学家左右两根筷子都会被拿起</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">mutex.<span class="built_in">P</span>();</span><br><span class="line">       chopsticks[id].<span class="built_in">P</span>();</span><br><span class="line">       <span class="keyword">while</span>(delay&gt;<span class="number">0</span>)&#123;</span><br><span class="line">           delay--;</span><br><span class="line">       &#125;</span><br><span class="line">       <span class="comment">//printf(&quot;philosopher%d picked up chopstick%d\n&quot;,id,id);</span></span><br><span class="line">       chopsticks[(id+<span class="number">1</span>)%MAX_SIZE].<span class="built_in">P</span>();</span><br><span class="line">       mutex.<span class="built_in">V</span>();</span><br></pre></td></tr></table></figure>
+
+<h2 id="4-实验结果"><a href="#4-实验结果" class="headerlink" title="4. 实验结果"></a>4. <strong>实验结果</strong></h2><h3 id="Assignment1-代码复现题"><a href="#Assignment1-代码复现题" class="headerlink" title="Assignment1 代码复现题"></a><strong>Assignment1 代码复现题</strong></h3><p>1.1.1使用自旋锁解决消失的芝士汉堡问题</p>
+<p>1.1.2使用信号量解决消失的芝士汉堡问题</p>
+<p><img src="/2024/05/06/oslab6/oslab6/1714983997122.png" alt="1714983997122"></p>
+<p>1.2使用bts实现自旋锁</p>
+<p><img src="/2024/05/06/oslab6/oslab6/1716042645677.png" alt="1716042645677"></p>
+<h3 id="Assignment2-生产者-消费者问题"><a href="#Assignment2-生产者-消费者问题" class="headerlink" title="Assignment2 生产者-消费者问题"></a><strong>Assignment2 生产者-消费者问题</strong></h3><p>2.1Race Condition</p>
+<p><img src="/2024/05/06/oslab6/oslab6/1715744966610.png" alt="1715744966610"></p>
+<p>2.2采用信号量的解决方案MAX_SIZE &#x3D; 1时</p>
+<p><img src="/2024/05/06/oslab6/oslab6/1716042964914.png" alt="1716042964914"></p>
+<h3 id="Assignment3-哲学家就餐问题"><a href="#Assignment3-哲学家就餐问题" class="headerlink" title="Assignment3 哲学家就餐问题"></a><strong>Assignment3 哲学家就餐问题</strong></h3><p>出现死锁情况：</p>
+<p><img src="/2024/05/06/oslab6/oslab6/1715774700068.png" alt="1715774700068"></p>
+<p>避免死锁情况：</p>
+<p><img src="/2024/05/06/oslab6/oslab6/1716035988152.png" alt="1716035988152"></p>
+<h2 id="5-总结"><a href="#5-总结" class="headerlink" title="5. 总结"></a>5. <strong>总结</strong></h2><p>在这次实验中通过改变几个经典同步问题，我学习了自旋锁的实现，信号量的使用等基本知识，进一步了解了互斥访问的问题，使用SpinLock和信号量来给出实现线程互斥的解决方案。加深了对理论课知识的理解。</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2024/04/22/oslab5/" rel="prev" title="">
+      <i class="fa fa-chevron-left"></i> 
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2024/05/20/oslab7/" rel="next" title="">
+       <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C%E5%90%8D%E7%A7%B0-Lab6-%E5%B9%B6%E5%8F%91%E4%B8%8E%E9%94%81%E6%9C%BA%E5%88%B6"><span class="nav-number">1.</span> <span class="nav-text">实验名称:          Lab6 并发与锁机制</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-%E5%AE%9E%E9%AA%8C%E8%A6%81%E6%B1%82"><span class="nav-number">1.1.</span> <span class="nav-text">1. 实验要求</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Assignment-1-%E4%BB%A3%E7%A0%81%E5%A4%8D%E7%8E%B0%E9%A2%98"><span class="nav-number">1.2.</span> <span class="nav-text">Assignment 1 代码复现题</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-1-%E4%BB%A3%E7%A0%81%E5%A4%8D%E7%8E%B0"><span class="nav-number">1.2.1.</span> <span class="nav-text">1.1 代码复现</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1-2-%E9%94%81%E6%9C%BA%E5%88%B6%E7%9A%84%E5%AE%9E%E7%8E%B0"><span class="nav-number">1.2.2.</span> <span class="nav-text">1.2 锁机制的实现</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Assignment-2-%E7%94%9F%E4%BA%A7%E8%80%85-%E6%B6%88%E8%B4%B9%E8%80%85%E9%97%AE%E9%A2%98"><span class="nav-number">1.3.</span> <span class="nav-text">Assignment 2 生产者-消费者问题</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#2-1-Race-Condition"><span class="nav-number">1.3.1.</span> <span class="nav-text">2.1 Race Condition</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-2-%E4%BF%A1%E5%8F%B7%E9%87%8F%E8%A7%A3%E5%86%B3%E6%96%B9%E6%B3%95"><span class="nav-number">1.3.2.</span> <span class="nav-text">2.2 信号量解决方法</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Assignment-3-%E5%93%B2%E5%AD%A6%E5%AE%B6%E5%B0%B1%E9%A4%90%E9%97%AE%E9%A2%98"><span class="nav-number">1.4.</span> <span class="nav-text">Assignment 3 哲学家就餐问题</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#3-1-%E5%88%9D%E6%AD%A5%E8%A7%A3%E5%86%B3%E6%96%B9%E6%B3%95"><span class="nav-number">1.4.1.</span> <span class="nav-text">3.1 初步解决方法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-2-%E6%AD%BB%E9%94%81%E8%A7%A3%E5%86%B3%E6%96%B9%E6%B3%95%EF%BC%88%E9%80%89%E5%81%9A%EF%BC%89"><span class="nav-number">1.4.2.</span> <span class="nav-text">3.2 死锁解决方法（选做）</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-%E5%AE%9E%E9%AA%8C%E8%BF%87%E7%A8%8B"><span class="nav-number">1.5.</span> <span class="nav-text">2. 实验过程</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Assignment1"><span class="nav-number">1.5.1.</span> <span class="nav-text">Assignment1</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#1-1-1%E8%87%AA%E6%97%8B%E9%94%81%E5%AE%9E%E7%8E%B0%E6%96%B9%E6%B3%95"><span class="nav-number">1.5.1.1.</span> <span class="nav-text">1.1.1自旋锁实现方法</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#1-1-1%E4%BF%A1%E5%8F%B7%E9%87%8F%E5%AE%9E%E7%8E%B0%E6%96%B9%E6%B3%95"><span class="nav-number">1.5.1.2.</span> <span class="nav-text">1.1.1信号量实现方法</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#1-2-%E9%94%81%E6%9C%BA%E5%88%B6%E7%9A%84%E5%AE%9E%E7%8E%B0-1"><span class="nav-number">1.5.1.3.</span> <span class="nav-text">1.2 锁机制的实现</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Assignment2"><span class="nav-number">1.5.2.</span> <span class="nav-text">Assignment2</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Assignment-2-1"><span class="nav-number">1.5.2.1.</span> <span class="nav-text">Assignment 2.1</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Assignment-2-2"><span class="nav-number">1.5.2.2.</span> <span class="nav-text">Assignment 2.2</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Assignment-3"><span class="nav-number">1.5.3.</span> <span class="nav-text">Assignment 3</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-%E5%85%B3%E9%94%AE%E4%BB%A3%E7%A0%81"><span class="nav-number">1.6.</span> <span class="nav-text">3. 关键代码</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Assignment-1"><span class="nav-number">1.6.1.</span> <span class="nav-text">Assignment 1</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Assignment2-1"><span class="nav-number">1.6.2.</span> <span class="nav-text">Assignment2</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Assignment3"><span class="nav-number">1.6.3.</span> <span class="nav-text">Assignment3</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-%E5%AE%9E%E9%AA%8C%E7%BB%93%E6%9E%9C"><span class="nav-number">1.7.</span> <span class="nav-text">4. 实验结果</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Assignment1-%E4%BB%A3%E7%A0%81%E5%A4%8D%E7%8E%B0%E9%A2%98"><span class="nav-number">1.7.1.</span> <span class="nav-text">Assignment1 代码复现题</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Assignment2-%E7%94%9F%E4%BA%A7%E8%80%85-%E6%B6%88%E8%B4%B9%E8%80%85%E9%97%AE%E9%A2%98"><span class="nav-number">1.7.2.</span> <span class="nav-text">Assignment2 生产者-消费者问题</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Assignment3-%E5%93%B2%E5%AD%A6%E5%AE%B6%E5%B0%B1%E9%A4%90%E9%97%AE%E9%A2%98"><span class="nav-number">1.7.3.</span> <span class="nav-text">Assignment3 哲学家就餐问题</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#5-%E6%80%BB%E7%BB%93"><span class="nav-number">1.8.</span> <span class="nav-text">5. 总结</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">zyh</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">9</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">1</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2024</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">zyh</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://muse.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

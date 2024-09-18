@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.1.1">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Muse","version":"7.8.0","exturl":false,"sidebar":{"position":"left","Sidebar Display (only for Muse | Mist), available values":["always  expand for all pages automatically."],"display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="实验课程:                   操作系统 实验名称:          Lab7 内存管理 姓名:                    庄云皓 学号:                   22336327  1. 实验要求Assignment 1复现参考代码，实现二级分页机制，并能够在虚拟机地址空间中进行内存管理，包括内存的申请和释放等，截图并给出过程解释。 Assignme">
+<meta property="og:type" content="article">
+<meta property="og:title" content="yhzhuang">
+<meta property="og:url" content="http://example.com/2024/05/20/oslab7/index.html">
+<meta property="og:site_name" content="yhzhuang">
+<meta property="og:description" content="实验课程:                   操作系统 实验名称:          Lab7 内存管理 姓名:                    庄云皓 学号:                   22336327  1. 实验要求Assignment 1复现参考代码，实现二级分页机制，并能够在虚拟机地址空间中进行内存管理，包括内存的申请和释放等，截图并给出过程解释。 Assignme">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/2024/05/20/oslab7/oslab7/1717171735091.png">
+<meta property="og:image" content="http://example.com/2024/05/20/oslab7/oslab7/1717172406777.png">
+<meta property="og:image" content="http://example.com/2024/05/20/oslab7/oslab7/1717297841023.png">
+<meta property="og:image" content="http://example.com/2024/05/20/oslab7/oslab7/1717315484763.png">
+<meta property="og:image" content="http://example.com/2024/05/20/oslab7/oslab7/1717316547661.png">
+<meta property="og:image" content="http://example.com/2024/05/20/oslab7/oslab7/1717372803677.png">
+<meta property="og:image" content="http://example.com/2024/05/20/oslab7/oslab7/1717131430906.png">
+<meta property="og:image" content="http://example.com/2024/05/20/oslab7/oslab7/1717116874977.png">
+<meta property="og:image" content="http://example.com/2024/05/20/oslab7/oslab7/1717086633066.png">
+<meta property="og:image" content="http://example.com/2024/05/20/oslab7/oslab7/1717130935790.png">
+<meta property="og:image" content="http://example.com/2024/05/20/oslab7/oslab7/1717376584481.png">
+<meta property="og:image" content="http://example.com/2024/05/20/oslab7/oslab7/1717348305387.png">
+<meta property="og:image" content="http://example.com/2024/05/20/oslab7/oslab7/1717347573550.png">
+<meta property="article:published_time" content="2024-05-20T01:55:50.022Z">
+<meta property="article:modified_time" content="2024-06-03T01:04:05.869Z">
+<meta property="article:author" content="zyh">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/2024/05/20/oslab7/oslab7/1717171735091.png">
+
+<link rel="canonical" href="http://example.com/2024/05/20/oslab7/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title> | yhzhuang</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">yhzhuang</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-resources">
+
+    <a href="/resources/" rel="section"><i class="download fa-fw"></i>resources</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2024/05/20/oslab7/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="zyh">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="yhzhuang">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2024-05-20 09:55:50" itemprop="dateCreated datePublished" datetime="2024-05-20T09:55:50+08:00">2024-05-20</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2024-06-03 09:04:05" itemprop="dateModified" datetime="2024-06-03T09:04:05+08:00">2024-06-03</time>
+              </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <!---
+title:SYSU-2024操作系统lab3实验报告
+
+date:2024-03-24 23:54:26
+
+tags:os
+
+comments:true
+
+author:zyh
+--->
+
+<p>实验课程:                   操作系统</p>
+<h1 id="实验名称-Lab7-内存管理"><a href="#实验名称-Lab7-内存管理" class="headerlink" title="实验名称:          Lab7 内存管理"></a><strong>实验名称:          Lab7 内存管理</strong></h1><ul>
+<li>姓名:                    庄云皓</li>
+<li>学号:                   22336327</li>
+</ul>
+<h2 id="1-实验要求"><a href="#1-实验要求" class="headerlink" title="1. 实验要求"></a>1. <strong>实验要求</strong></h2><h3 id="Assignment-1"><a href="#Assignment-1" class="headerlink" title="Assignment 1"></a>Assignment 1</h3><p>复现参考代码，实现二级分页机制，并能够在虚拟机地址空间中进行内存管理，包括内存的申请和释放等，截图并给出过程解释。</p>
+<h3 id="Assignment-2"><a href="#Assignment-2" class="headerlink" title="Assignment 2"></a>Assignment 2</h3><p>参照理论课上的学习的物理内存分配算法如first-fit, best-fit等实现动态分区算法等，或者自行提出自己的算法。</p>
+<h3 id="Assignment-3"><a href="#Assignment-3" class="headerlink" title="Assignment 3"></a>Assignment 3</h3><p>复现“虚拟页内存管理”一节的代码，完成如下要求。</p>
+<ul>
+<li>结合代码分析虚拟页内存分配的三步过程和虚拟页内存释放。</li>
+<li>构造测试例子来分析虚拟页内存管理的实现是否存在bug。如果存在，则尝试修复并再次测试。否则，结合测例简要分析虚拟页内存管理的实现的正确性。</li>
+<li>（<strong>不做要求，对评分没有影响</strong>）如果你有想法，可以在自己的理解的基础上，参考ucore，《操作系统真象还原》，《一个操作系统的实现》等资料来实现自己的虚拟页内存管理。在完成之后，你需要指明相比较于本教程，你的实现的虚拟页内存管理的特点所在。</li>
+</ul>
+<h3 id="Assignment-4"><a href="#Assignment-4" class="headerlink" title="Assignment 4"></a>Assignment 4</h3><p>参照理论课上虚拟内存管理的页面置换算法如FIFO、LRU等，实现页面置换，也可以提出自己的算法。</p>
+<h2 id="2-实验过程"><a href="#2-实验过程" class="headerlink" title="2. 实验过程"></a>2. <strong>实验过程</strong></h2><h3 id="Assignment1"><a href="#Assignment1" class="headerlink" title="Assignment1"></a><strong>Assignment1</strong></h3><p>BitMap</p>
+<p><code>setup.cpp</code>中</p>
+<p><code>char*pages_0= (char*)memoryManager.allocatePhysicalPages(AddressPoolType::KERNEL, 128);</code></p>
+<p>调用了 <code>MemoryManager</code>的成员函数allocatePhisicalPages</p>
+<p><img src="/2024/05/20/oslab7/oslab7/1717171735091.png" alt="1717171735091"></p>
+<p>接着我们进入 <code>allocatePhysicalPages</code>,这里的resources是一个Bitmap变量，allocate在给的代码中默认采用的是first_fit的算法，<code>Bitmap::allocate</code>的功能是按照分配方式找到位图对应的位置，都置为1。位图位与内核空间中。</p>
+<p>第一次调用 <code>Bitmap::allocate</code>的返回值为0，分配完128pages，后第二次调用 <code>Bitmap::allocate</code>返回值为128（返回值为分配时bitmap数组的起始位置）</p>
+<p>则 <code>AddressPool::allocate</code>的返回值为PAGE_SIZE*start+startAddress 即从哪个地址开始分配 ,这里的startAddress可认为是起始地址的基址，是2097152，即0x200000。</p>
+<p><img src="/2024/05/20/oslab7/oslab7/1717172406777.png" alt="1717172406777"></p>
+<p>release的过程类似:(address - startAddress&#x2F;PAGE_SIZE)算出bitmap对应的位置index,然后从该位置开始把后面count个元素置零。</p>
+<h3 id="Assignment2"><a href="#Assignment2" class="headerlink" title="Assignment2"></a><strong>Assignment2</strong></h3><ul>
+<li>first_fit：从低地址开始搜索,找到第一个可以容纳请求块的空闲分区</li>
+<li>best_fit：从所有可用分区中找到最小的能够满足请求的分区</li>
+<li>worst_fit：从所有可用分区中找到最大的能够满足请求的分区<br>具体实现见关键代码处</li>
+</ul>
+<h3 id="Assignment3"><a href="#Assignment3" class="headerlink" title="Assignment3"></a><strong>Assignment3</strong></h3><p>虚拟页内存分配的三步：</p>
+<ul>
+<li><strong>从虚拟地址池中分配连续的多个虚拟页</strong> 。<img src="/2024/05/20/oslab7/oslab7/1717297841023.png" alt="1717297841023"><br>我们建立了用户虚拟地址池,首先定义虚拟地址起始地址的宏，使得分配的页空间虚拟地址仅在3-4GB之<br>间</li>
+</ul>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">define</span> KERNEL_VIRTUAL_START 0xc0100000</span></span><br></pre></td></tr></table></figure>
+
+<p>  从地址池中分配count个连续页的过程在assignment1中已经提到，不再赘述。<br>这是 <code>kernel/memory.cpp</code>中的 <code>MemoryManager::allocatePages</code>函数：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">int</span> <span class="title">MemoryManager::allocatePages</span><span class="params">(<span class="keyword">enum</span> AddressPoolType type, <span class="type">const</span> <span class="type">int</span> count)</span></span>;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 第一步：从虚拟地址池中分配若干虚拟页</span></span><br><span class="line"><span class="type">int</span> virtualAddress = <span class="built_in">allocateVirtualPages</span>(type, count);</span><br><span class="line"><span class="keyword">if</span> (!virtualAddress)</span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>接下来，我们要开始为每一个虚拟页指定物理页，这件事分为两步，先分配虚拟页，再建立虚拟页和物理页的联系。分配过程和之前一样</p>
+<ul>
+<li><strong>从物理地址池中为每一个虚拟页分配相应大小的物理页</strong> 。</li>
+</ul>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">bool</span> flag;</span><br><span class="line"><span class="type">int</span> physicalPageAddress;</span><br><span class="line"><span class="type">int</span> vaddress = virtualAddress;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 依次为每一个虚拟页指定物理页</span></span><br><span class="line"><span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; count; ++i, vaddress += PAGE_SIZE)</span><br><span class="line">&#123;</span><br><span class="line">    flag = <span class="literal">false</span>;</span><br><span class="line">    <span class="comment">// 第二步：从物理地址池中分配一个物理页</span></span><br><span class="line">    physicalPageAddress = <span class="built_in">allocatePhysicalPages</span>(type, <span class="number">1</span>);</span><br><span class="line">    <span class="keyword">if</span> (physicalPageAddress)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="comment">//printf(&quot;allocate physical page 0x%x\n&quot;, physicalPageAddress);</span></span><br><span class="line"></span><br><span class="line">        <span class="comment">// 第三步：为虚拟页建立页目录项和页表项，使虚拟页内的地址经过分页机制变换到物理页内。</span></span><br><span class="line">        flag = <span class="built_in">connectPhysicalVirtualPage</span>(vaddress, physicalPageAddress);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span></span><br><span class="line">    &#123;</span><br><span class="line">        flag = <span class="literal">false</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 分配失败，释放前面已经分配的虚拟页和物理页表</span></span><br><span class="line">    <span class="keyword">if</span> (!flag)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="comment">// 前i个页表已经指定了物理页</span></span><br><span class="line">        <span class="built_in">releasePages</span>(type, virtualAddress, i);</span><br><span class="line">        <span class="comment">// 剩余的页表未指定物理页</span></span><br><span class="line">        <span class="built_in">releaseVirtualPages</span>(type, virtualAddress + i * PAGE_SIZE, count - i);</span><br><span class="line">        <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">return</span> virtualAddress;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><strong>在页目录表和页表中建立虚拟页和物理页之间的对应关系</strong> 。此时，由于分页机制的存在，物理页的地址可以不连续。CPU的MMU会在程序执行过程中将虚拟地址翻译成物理地址。</li>
+</ul>
+<p>我们具体来看这个函数：<code>connectPhysicalVirtualPage(vaddress, physicalPageAddress);</code></p>
+<p><img src="/2024/05/20/oslab7/oslab7/1717315484763.png" alt="1717315484763"></p>
+<ul>
+<li>首先得到虚拟地址对应的页目录项pde和页表项pte</li>
+<li>如果页目录项无页表则1.分配物理页给页表   2.使页目录项指向页表   3.进行空间的分配</li>
+<li>有的话直接将页表项指向物理页</li>
+</ul>
+<p>一些关键代码的解释:<br><code>*pde &amp; 0x00000001</code>表示获取存在位（P位），若为0则取分配物理页</p>
+<p><img src="/2024/05/20/oslab7/oslab7/1717316547661.png" alt="1717316547661"></p>
+<p>将页表项指向物理页，<code>*physicalPageAddress | 0x7</code>中的按位或运算是为了设置页目录项的标志位</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">bool</span> <span class="title">MemoryManager::connectPhysicalVirtualPage</span><span class="params">(<span class="type">const</span> <span class="type">int</span> virtualAddress, <span class="type">const</span> <span class="type">int</span> physicalPageAddress)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="comment">// 计算虚拟地址对应的页目录项和页表项</span></span><br><span class="line">    <span class="type">int</span> *pde = (<span class="type">int</span> *)<span class="built_in">toPDE</span>(virtualAddress);</span><br><span class="line">    <span class="type">int</span> *pte = (<span class="type">int</span> *)<span class="built_in">toPTE</span>(virtualAddress);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 页目录项无对应的页表，先分配一个页表</span></span><br><span class="line">    <span class="keyword">if</span>(!(*pde &amp; <span class="number">0x00000001</span>)) </span><br><span class="line">    &#123;</span><br><span class="line">        <span class="comment">// 从内核物理地址空间中分配一个页表</span></span><br><span class="line">        <span class="type">int</span> page = <span class="built_in">allocatePhysicalPages</span>(AddressPoolType::KERNEL, <span class="number">1</span>);</span><br><span class="line">        <span class="keyword">if</span> (!page)</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 使页目录项指向页表</span></span><br><span class="line">        *pde = page | <span class="number">0x7</span>;</span><br><span class="line">        <span class="comment">// 初始化页表</span></span><br><span class="line">        <span class="type">char</span> *pagePtr = (<span class="type">char</span> *)(((<span class="type">int</span>)pte) &amp; <span class="number">0xfffff000</span>);</span><br><span class="line">        <span class="built_in">memset</span>(pagePtr, <span class="number">0</span>, PAGE_SIZE);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 使页表项指向物理页</span></span><br><span class="line">    *pte = physicalPageAddress | <span class="number">0x7</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>释放内存过程：分为两步,首先释放物理页再释放虚拟页。</p>
+<p>要注意把页表项pte置空，防止再次被访问。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">void</span> <span class="title">MemoryManager::releasePages</span><span class="params">(<span class="keyword">enum</span> AddressPoolType type, <span class="type">const</span> <span class="type">int</span> virtualAddress, <span class="type">const</span> <span class="type">int</span> count)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="type">int</span> vaddr = virtualAddress;</span><br><span class="line">    <span class="type">int</span> *pte;</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; count; ++i, vaddr += PAGE_SIZE)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="comment">// 第一步，对每一个虚拟页，释放为其分配的物理页</span></span><br><span class="line">        <span class="built_in">releasePhysicalPages</span>(type, <span class="built_in">vaddr2paddr</span>(vaddr), <span class="number">1</span>);</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 设置页表项为不存在，防止释放后被再次使用</span></span><br><span class="line">        pte = (<span class="type">int</span> *)<span class="built_in">toPTE</span>(vaddr);</span><br><span class="line">        *pte = <span class="number">0</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 第二步，释放虚拟页</span></span><br><span class="line">    <span class="built_in">releaseVirtualPages</span>(type, virtualAddress, count);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>通过打印测试用例发现，确实达到了虚拟内存连续分配，物理内存分配不连续的效果</p>
+<p>测试用例：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">char</span> *p1 = (<span class="type">char</span> *)memoryManager.<span class="built_in">allocatePages</span>(AddressPoolType::KERNEL, <span class="number">100</span>);</span><br><span class="line">    <span class="type">char</span> *p2 = (<span class="type">char</span> *)memoryManager.<span class="built_in">allocatePages</span>(AddressPoolType::KERNEL, <span class="number">10</span>);</span><br><span class="line">    <span class="type">char</span> *p3 = (<span class="type">char</span> *)memoryManager.<span class="built_in">allocatePages</span>(AddressPoolType::KERNEL, <span class="number">100</span>);</span><br><span class="line"></span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;%x %x %x\n&quot;</span>, p1, p2, p3);</span><br><span class="line"></span><br><span class="line">    memoryManager.<span class="built_in">releasePages</span>(AddressPoolType::KERNEL, (<span class="type">int</span>)p2, <span class="number">10</span>);</span><br><span class="line">    p2 = (<span class="type">char</span> *)memoryManager.<span class="built_in">allocatePages</span>(AddressPoolType::KERNEL, <span class="number">100</span>);</span><br><span class="line"></span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;%x\n&quot;</span>, p2);</span><br><span class="line"></span><br><span class="line">    p2 = (<span class="type">char</span> *)memoryManager.<span class="built_in">allocatePages</span>(AddressPoolType::KERNEL, <span class="number">10</span>);</span><br><span class="line">  </span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;%x\n&quot;</span>, p2);</span><br></pre></td></tr></table></figure>
+
+<p>虚拟内存分配结果:p2释放后重新分配100页的空间时，从0xc01d2000,而分配10页空间时从原来释放内存的0x164000开始</p>
+<p><img src="/2024/05/20/oslab7/oslab7/1717372803677.png" alt="1717372803677"></p>
+<p>物理内存则在分配100页时从原来释放的地址的开始，如果孔空间不够继续找到下一个空的空间。</p>
+<p>一些bug:</p>
+<p>没有使用互斥机制导致不同线程可能都进入临界区，分配到相同的物理地址。我们延长了等待时间使得这个错误发生。具体错误见实验结果处。</p>
+<p>解决方案：使用信号量解决.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br></pre></td><td class="code"><pre><span class="line">Semaphore semaphore;</span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">MemoryManager::initialize</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    semaphore.<span class="built_in">initialize</span>(<span class="number">1</span>);</span><br><span class="line">...</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">MemoryManager::allocatePages</span><span class="params">(<span class="keyword">enum</span> AddressPoolType type, <span class="type">const</span> <span class="type">int</span> count)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    semaphore.<span class="built_in">P</span>();</span><br><span class="line">  </span><br><span class="line">    <span class="comment">// 第一步：从虚拟地址池中分配若干虚拟页</span></span><br><span class="line">    <span class="type">int</span> virtualAddress = <span class="built_in">allocateVirtualPages</span>(type, count);</span><br><span class="line">  </span><br><span class="line">    <span class="keyword">if</span> (!virtualAddress)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="type">bool</span> flag;</span><br><span class="line">    <span class="type">int</span> physicalPageAddress;</span><br><span class="line">    <span class="type">int</span> vaddress = virtualAddress;</span><br><span class="line">  </span><br><span class="line">    <span class="comment">// 依次为每一个虚拟页指定物理页</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; count; ++i, vaddress += PAGE_SIZE)</span><br><span class="line">    &#123;</span><br><span class="line">        flag = <span class="literal">false</span>;</span><br><span class="line">        <span class="comment">// 第二步：从物理地址池中分配一个物理页</span></span><br><span class="line">        physicalPageAddress = <span class="built_in">allocatePhysicalPages</span>(type, <span class="number">1</span>);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (physicalPageAddress)</span><br><span class="line">        &#123;</span><br><span class="line"></span><br><span class="line">            <span class="comment">//printf(&quot;allocate physical page 0x%x\n&quot;, physicalPageAddress);</span></span><br><span class="line"></span><br><span class="line">            <span class="comment">// 第三步：为虚拟页建立页目录项和页表项，使虚拟页内的地址经过分页机制变换到物理页内。</span></span><br><span class="line">            flag = <span class="built_in">connectPhysicalVirtualPage</span>(vaddress, physicalPageAddress);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span></span><br><span class="line">        &#123;</span><br><span class="line">            flag = <span class="literal">false</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    semaphore.<span class="built_in">V</span>();</span><br><span class="line">        <span class="comment">// 分配失败，释放前面已经分配的虚拟页和物理页表</span></span><br><span class="line">        <span class="keyword">if</span> (!flag)</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="comment">// 前i个页表已经指定了物理页</span></span><br><span class="line">            <span class="built_in">releasePages</span>(type, virtualAddress, i);</span><br><span class="line">            <span class="comment">// 剩余的页表未指定物理页</span></span><br><span class="line">            <span class="built_in">releaseVirtualPages</span>(type, virtualAddress + i * PAGE_SIZE, count - i);</span><br><span class="line">            <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> virtualAddress;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>还有可能在其他地方也会出现没有互斥访问导致的问题没有解决。</p>
+<h3 id="Assignment-4-1"><a href="#Assignment-4-1" class="headerlink" title="Assignment 4"></a><strong>Assignment 4</strong></h3><p>本实验中我在win环境中模拟LRU</p>
+<p><strong>LRU页面置换</strong></p>
+<p>核心原理是基于“最近使用的数据将来被使用的概率更高”这一假设，即如果一个数据最近被访问过，那么它在不久的将来很可能再次被访问；相反，如果一个数据很长时间没有被访问，那么它在将来被访问的概率较低。我们使用一个times变量来记录多少次没有被访问过，取最大的淘汰。</p>
+<p>实现代码见关键代码</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> std;</span><br><span class="line"><span class="keyword">struct</span> <span class="title class_">memory</span>&#123;</span><br><span class="line">	<span class="type">int</span> id;</span><br><span class="line">	<span class="type">int</span> times;</span><br><span class="line">&#125;;</span><br><span class="line"><span class="keyword">class</span> <span class="title class_">LRUCache</span> &#123;</span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    <span class="type">int</span> num; <span class="comment">// 元素数量</span></span><br><span class="line">    <span class="type">int</span> capacity; <span class="comment">// 缓存空间</span></span><br><span class="line">    memory mem[<span class="number">3</span>];</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="built_in">LRUCache</span>(<span class="type">int</span> capacity)&#123;</span><br><span class="line">        <span class="keyword">this</span>-&gt;capacity = capacity;</span><br><span class="line">        num = <span class="number">0</span>;</span><br><span class="line">        <span class="keyword">for</span>(<span class="type">int</span> i = <span class="number">0</span>;i&lt;capacity;i++)&#123;</span><br><span class="line">        	mem[i].id = <span class="number">-1</span>;</span><br><span class="line">        	mem[i].times = <span class="number">0</span>;</span><br><span class="line">		&#125;</span><br><span class="line">    &#125;</span><br><span class="line">	<span class="function"><span class="type">void</span> <span class="title">tihuan</span><span class="params">(<span class="type">int</span> k)</span></span>&#123;</span><br><span class="line">		<span class="type">int</span> max = <span class="number">-1</span>;</span><br><span class="line">		<span class="type">int</span> max_id = <span class="number">-1</span>;</span><br><span class="line">		<span class="keyword">for</span>(<span class="type">int</span> i = <span class="number">0</span>;i&lt;num;i++)&#123;</span><br><span class="line">			<span class="keyword">if</span>(mem[i].times&gt;max)&#123;</span><br><span class="line">				max = mem[i].times;</span><br><span class="line">				max_id = i;</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="built_in">printf</span>(<span class="string">&quot;%d被替换为%d\n&quot;</span>,mem[max_id].id,k);</span><br><span class="line">		mem[max_id].id= k;</span><br><span class="line">		mem[max_id].times = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">	&#125;</span><br><span class="line">	<span class="function"><span class="type">bool</span> <span class="title">find</span><span class="params">(<span class="type">int</span> n)</span></span>&#123;</span><br><span class="line">		<span class="type">int</span> flag = <span class="number">0</span>;</span><br><span class="line">		<span class="keyword">for</span>(<span class="type">int</span> i = <span class="number">0</span>;i&lt;num;i++)&#123;</span><br><span class="line">			<span class="keyword">if</span>(mem[i].id== n)&#123;</span><br><span class="line">				flag = <span class="number">1</span>;</span><br><span class="line">				mem[i].times = <span class="number">0</span>;</span><br><span class="line">				<span class="keyword">break</span>;</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">return</span> flag;</span><br><span class="line"></span><br><span class="line">	&#125;</span><br><span class="line">    <span class="function"><span class="type">void</span> <span class="title">put</span><span class="params">(<span class="type">int</span> k)</span></span>&#123;</span><br><span class="line">    	<span class="keyword">for</span>(<span class="type">int</span> i = <span class="number">0</span>;i&lt;num;i++)&#123;</span><br><span class="line">    		mem[i].times++;</span><br><span class="line">		&#125;</span><br><span class="line">    	<span class="keyword">if</span>(!<span class="built_in">find</span>(k))&#123;</span><br><span class="line">    		<span class="keyword">if</span>(num&lt;capacity)&#123;</span><br><span class="line">    			mem[num].id=k;</span><br><span class="line">    			mem[num].times=<span class="number">0</span>;</span><br><span class="line">    			num++;</span><br><span class="line">			&#125;<span class="keyword">else</span>&#123;</span><br><span class="line">				<span class="built_in">tihuan</span>(k);</span><br><span class="line">			&#125;</span><br><span class="line">    	</span><br><span class="line">		&#125;<span class="keyword">else</span>&#123;</span><br><span class="line">			<span class="built_in">printf</span>(<span class="string">&quot;id %d hit\n&quot;</span>,k);</span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		<span class="built_in">printf</span>(<span class="string">&quot;page id now:\n&quot;</span>);</span><br><span class="line">		<span class="keyword">for</span>(<span class="type">int</span> i = <span class="number">0</span>;i&lt;num;i++)&#123;</span><br><span class="line">			<span class="built_in">printf</span>(<span class="string">&quot;%d &quot;</span>,mem[i].id);</span><br><span class="line"></span><br><span class="line">		&#125;</span><br><span class="line">		<span class="built_in">printf</span>(<span class="string">&quot;\n&quot;</span>);</span><br><span class="line"></span><br><span class="line">	&#125;</span><br><span class="line">&#125;;</span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">	<span class="type">int</span> seq[<span class="number">10</span>]= &#123;<span class="number">7</span>,<span class="number">0</span>,<span class="number">1</span>,<span class="number">2</span>,<span class="number">0</span>,<span class="number">3</span>,<span class="number">0</span>,<span class="number">4</span>,<span class="number">2</span>,<span class="number">3</span>&#125;;</span><br><span class="line">    <span class="function">LRUCache <span class="title">cache1</span><span class="params">(<span class="number">3</span>)</span></span>; <span class="comment">// 设置缓存容量为3</span></span><br><span class="line">	<span class="keyword">for</span>(<span class="type">int</span> i=<span class="number">0</span>; i&lt;<span class="number">10</span>;i++)&#123;</span><br><span class="line">		cache1.<span class="built_in">put</span>(seq[i]);</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="3-关键代码"><a href="#3-关键代码" class="headerlink" title="3. 关键代码"></a>3. <strong>关键代码</strong></h2><p> Assignment1中分配内存用的是和Assignment2一样的测试代码</p>
+<p>Assignment2中first_fit:</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">int</span> <span class="title">BitMap::allocate</span><span class="params">(<span class="type">const</span> <span class="type">int</span> count)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (count == <span class="number">0</span>)</span><br><span class="line">        <span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line"></span><br><span class="line">    <span class="type">int</span> index, empty, start;</span><br><span class="line"></span><br><span class="line">    index = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">while</span> (index &lt; length)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="comment">// 越过已经分配的资源</span></span><br><span class="line">        <span class="keyword">while</span> (index &lt; length &amp;&amp; <span class="built_in">get</span>(index))</span><br><span class="line">            ++index;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 不存在连续的count个资源</span></span><br><span class="line">        <span class="keyword">if</span> (index == length)</span><br><span class="line">            <span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 找到1个未分配的资源</span></span><br><span class="line">        <span class="comment">// 检查是否存在从index开始的连续count个资源</span></span><br><span class="line">        empty = <span class="number">0</span>;</span><br><span class="line">        start = index;</span><br><span class="line">        <span class="keyword">while</span> ((index &lt; length) &amp;&amp; (!<span class="built_in">get</span>(index)) &amp;&amp; (empty &lt; count))</span><br><span class="line">        &#123;</span><br><span class="line">            ++empty;</span><br><span class="line">            ++index;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 存在连续的count个资源</span></span><br><span class="line">        <span class="keyword">if</span> (empty == count)</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; count; ++i)</span><br><span class="line">            &#123;</span><br><span class="line">                <span class="built_in">set</span>(start + i, <span class="literal">true</span>);</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            <span class="keyword">return</span> start;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>best_fit:使用min_space和min_start记录当前最小且大于count的最小空间，和其对应的起始地址。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">int</span> <span class="title">BitMap::best_fit</span><span class="params">(<span class="type">const</span> <span class="type">int</span> count)</span></span>&#123;</span><br><span class="line">	<span class="keyword">if</span> (count == <span class="number">0</span>)</span><br><span class="line">        <span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line"></span><br><span class="line">    <span class="type">int</span> index, empty, start;</span><br><span class="line">    <span class="type">int</span> min_space = <span class="number">0xffffff</span>;</span><br><span class="line">    <span class="type">int</span> min_start = <span class="number">0</span>;</span><br><span class="line">    index = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">while</span> (index &lt; length)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="comment">// 越过已经分配的资源</span></span><br><span class="line">        <span class="keyword">while</span> (index &lt; length &amp;&amp; <span class="built_in">get</span>(index))&#123;</span><br><span class="line">            ++index;</span><br><span class="line">        &#125;</span><br><span class="line">        </span><br><span class="line">        <span class="comment">// 不存在连续的count个资源</span></span><br><span class="line">        <span class="keyword">if</span> (index == length)</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 找到1个未分配的资源</span></span><br><span class="line">        <span class="comment">// 检查是否存在从index开始的连续count个资源</span></span><br><span class="line">        empty = <span class="number">0</span>;</span><br><span class="line">        start = index;</span><br><span class="line">        <span class="keyword">while</span> ((index &lt; length) &amp;&amp; (!<span class="built_in">get</span>(index)))</span><br><span class="line">        &#123;</span><br><span class="line">            ++empty;</span><br><span class="line">            ++index;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span>(empty&gt;=count &amp;&amp; empty&lt;min_space)&#123;</span><br><span class="line">            min_space = empty;</span><br><span class="line">            min_start = start;</span><br><span class="line">        &#125;</span><br><span class="line">    </span><br><span class="line">        <span class="comment">// 存在连续的count个资源</span></span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span>(min_space == <span class="number">0xffffff</span>)&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line">    start = min_start;</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; count; ++i)</span><br><span class="line">            &#123;</span><br><span class="line">                <span class="built_in">set</span>(start + i, <span class="literal">true</span>);</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            <span class="keyword">return</span> start;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>worst_fit:则与best_fit相反</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">int</span> <span class="title">BitMap::worst_fit</span><span class="params">(<span class="type">const</span> <span class="type">int</span> count)</span></span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (count == <span class="number">0</span>)</span><br><span class="line">        <span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line"></span><br><span class="line">    <span class="type">int</span> index, empty, start;</span><br><span class="line">    <span class="type">int</span> max_space = <span class="number">-1</span>;</span><br><span class="line">    <span class="type">int</span> max_start = <span class="number">0</span>;</span><br><span class="line">    index = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">while</span> (index &lt; length)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="comment">// 越过已经分配的资源</span></span><br><span class="line">        <span class="keyword">while</span> (index &lt; length &amp;&amp; <span class="built_in">get</span>(index))&#123;</span><br><span class="line">            ++index;</span><br><span class="line">        &#125;</span><br><span class="line">  </span><br><span class="line">        <span class="comment">// 不存在连续的count个资源</span></span><br><span class="line">        <span class="keyword">if</span> (index == length)</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 找到1个未分配的资源</span></span><br><span class="line">        <span class="comment">// 检查是否存在从index开始的连续count个资源</span></span><br><span class="line">        empty = <span class="number">0</span>;</span><br><span class="line">        start = index;</span><br><span class="line">        <span class="keyword">while</span> ((index &lt; length) &amp;&amp; (!<span class="built_in">get</span>(index)))</span><br><span class="line">        &#123;</span><br><span class="line">            ++empty;</span><br><span class="line">            ++index;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span>(empty&gt;=count &amp;&amp; empty&gt;max_space)&#123;</span><br><span class="line">            max_space = empty;</span><br><span class="line">            max_start = start;</span><br><span class="line">        &#125;</span><br><span class="line">  </span><br><span class="line">        <span class="comment">// 存在连续的count个资源</span></span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span>(max_space == <span class="number">-1</span>)&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line">    start = max_start;</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; count; ++i)</span><br><span class="line">            &#123;</span><br><span class="line">                <span class="built_in">set</span>(start + i, <span class="literal">true</span>);</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            <span class="keyword">return</span> start;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>Assignment4</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> std;</span><br><span class="line"><span class="keyword">struct</span> <span class="title class_">memory</span>&#123;</span><br><span class="line">	<span class="type">int</span> id;</span><br><span class="line">	<span class="type">int</span> times;</span><br><span class="line">&#125;;</span><br><span class="line"><span class="keyword">class</span> <span class="title class_">LRUCache</span> &#123;</span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    <span class="type">int</span> num; <span class="comment">// 元素数量</span></span><br><span class="line">    <span class="type">int</span> capacity; <span class="comment">// 缓存空间</span></span><br><span class="line">    memory mem[<span class="number">3</span>];</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="built_in">LRUCache</span>(<span class="type">int</span> capacity)&#123;</span><br><span class="line">        <span class="keyword">this</span>-&gt;capacity = capacity;</span><br><span class="line">        num = <span class="number">0</span>;</span><br><span class="line">        <span class="keyword">for</span>(<span class="type">int</span> i = <span class="number">0</span>;i&lt;capacity;i++)&#123;</span><br><span class="line">        	mem[i].id = <span class="number">-1</span>;</span><br><span class="line">        	mem[i].times = <span class="number">0</span>;</span><br><span class="line">		&#125;</span><br><span class="line">    &#125;</span><br><span class="line">	<span class="function"><span class="type">void</span> <span class="title">tihuan</span><span class="params">(<span class="type">int</span> k)</span></span>&#123;</span><br><span class="line">		<span class="type">int</span> max = <span class="number">-1</span>;</span><br><span class="line">		<span class="type">int</span> max_id = <span class="number">-1</span>;</span><br><span class="line">		<span class="keyword">for</span>(<span class="type">int</span> i = <span class="number">0</span>;i&lt;num;i++)&#123;</span><br><span class="line">			<span class="keyword">if</span>(mem[i].times&gt;max)&#123;</span><br><span class="line">				max = mem[i].times;</span><br><span class="line">				max_id = i;</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="built_in">printf</span>(<span class="string">&quot;%d被替换为%d\n&quot;</span>,mem[max_id].id,k);</span><br><span class="line">		mem[max_id].id= k;</span><br><span class="line">		mem[max_id].times = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">	&#125;</span><br><span class="line">	<span class="function"><span class="type">bool</span> <span class="title">find</span><span class="params">(<span class="type">int</span> n)</span></span>&#123;</span><br><span class="line">		<span class="type">int</span> flag = <span class="number">0</span>;</span><br><span class="line">		<span class="keyword">for</span>(<span class="type">int</span> i = <span class="number">0</span>;i&lt;num;i++)&#123;</span><br><span class="line">			<span class="keyword">if</span>(mem[i].id== n)&#123;</span><br><span class="line">				flag = <span class="number">1</span>;</span><br><span class="line">				mem[i].times = <span class="number">0</span>;</span><br><span class="line">				<span class="keyword">break</span>;</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">return</span> flag;</span><br><span class="line"></span><br><span class="line">	&#125;</span><br><span class="line">    <span class="function"><span class="type">void</span> <span class="title">put</span><span class="params">(<span class="type">int</span> k)</span></span>&#123;</span><br><span class="line">    	<span class="keyword">for</span>(<span class="type">int</span> i = <span class="number">0</span>;i&lt;num;i++)&#123;</span><br><span class="line">    		mem[i].times++;</span><br><span class="line">		&#125;</span><br><span class="line">    	<span class="keyword">if</span>(!<span class="built_in">find</span>(k))&#123;</span><br><span class="line">    		<span class="keyword">if</span>(num&lt;capacity)&#123;</span><br><span class="line">    			mem[num].id=k;</span><br><span class="line">    			mem[num].times=<span class="number">0</span>;</span><br><span class="line">    			num++;</span><br><span class="line">			&#125;<span class="keyword">else</span>&#123;</span><br><span class="line">				<span class="built_in">tihuan</span>(k);</span><br><span class="line">			&#125;</span><br><span class="line">  </span><br><span class="line">		&#125;<span class="keyword">else</span>&#123;</span><br><span class="line">			<span class="built_in">printf</span>(<span class="string">&quot;id %d hit\n&quot;</span>,k);</span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		<span class="built_in">printf</span>(<span class="string">&quot;page id now:\n&quot;</span>);</span><br><span class="line">		<span class="keyword">for</span>(<span class="type">int</span> i = <span class="number">0</span>;i&lt;num;i++)&#123;</span><br><span class="line">			<span class="built_in">printf</span>(<span class="string">&quot;%d &quot;</span>,mem[i].id);</span><br><span class="line"></span><br><span class="line">		&#125;</span><br><span class="line">		<span class="built_in">printf</span>(<span class="string">&quot;\n&quot;</span>);</span><br><span class="line"></span><br><span class="line">	&#125;</span><br><span class="line">&#125;;</span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">	<span class="type">int</span> seq[<span class="number">10</span>]= &#123;<span class="number">7</span>,<span class="number">0</span>,<span class="number">1</span>,<span class="number">2</span>,<span class="number">0</span>,<span class="number">3</span>,<span class="number">0</span>,<span class="number">4</span>,<span class="number">2</span>,<span class="number">3</span>&#125;;</span><br><span class="line">    <span class="function">LRUCache <span class="title">cache1</span><span class="params">(<span class="number">3</span>)</span></span>; <span class="comment">// 设置缓存容量为3</span></span><br><span class="line">	<span class="keyword">for</span>(<span class="type">int</span> i=<span class="number">0</span>; i&lt;<span class="number">10</span>;i++)&#123;</span><br><span class="line">		cache1.<span class="built_in">put</span>(seq[i]);</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<h2 id="4-实验结果"><a href="#4-实验结果" class="headerlink" title="4. 实验结果"></a>4. <strong>实验结果</strong></h2><h2 id="Assignment-2-1"><a href="#Assignment-2-1" class="headerlink" title="Assignment 2"></a>Assignment 2</h2><p>分配四次，释放两次内存后的内存空间如左图所示，右侧是采用不同方法继续分配两次空间后的结果</p>
+<p><img src="/2024/05/20/oslab7/oslab7/1717131430906.png" alt="1717131430906"></p>
+<p><img src="/2024/05/20/oslab7/oslab7/1717116874977.png" alt="1717116874977"></p>
+<p>best_fit:</p>
+<p>可以看到，</p>
+<p><img src="/2024/05/20/oslab7/oslab7/1717086633066.png" alt="1717086633066"></p>
+<p>worst_fit</p>
+<p><img src="/2024/05/20/oslab7/oslab7/1717130935790.png" alt="1717130935790"></p>
+<h3 id="Assignment-3-1"><a href="#Assignment-3-1" class="headerlink" title="Assignment 3"></a>Assignment 3</h3><p>没有实现互斥机制时的错误：分配到了同样的虚拟地址</p>
+<p>测试用例：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">memoryManager memoryManager;</span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">second_thread</span><span class="params">(<span class="type">void</span> *arg)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="type">char</span> *p2 = (<span class="type">char</span> *)memoryManager.<span class="built_in">allocatePages</span>(AddressPoolType::KERNEL, <span class="number">1</span>);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;thread2 %x\n&quot;</span>,p2);</span><br><span class="line">&#125;</span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">third_thread</span><span class="params">(<span class="type">void</span> *arg)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="type">char</span> *p3 = (<span class="type">char</span> *)memoryManager.<span class="built_in">allocatePages</span>(AddressPoolType::KERNEL, <span class="number">1</span>);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;thread3 %x\n&quot;</span>,p3);</span><br><span class="line">&#125;</span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">first_thread</span><span class="params">(<span class="type">void</span> *arg)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="type">int</span> pid1 = programManager.<span class="built_in">executeThread</span>(second_thread, <span class="literal">nullptr</span>, <span class="string">&quot;second thread&quot;</span>, <span class="number">1</span>);</span><br><span class="line">    <span class="type">int</span> pid2 = programManager.<span class="built_in">executeThread</span>(third_thread, <span class="literal">nullptr</span>, <span class="string">&quot;third thread&quot;</span>, <span class="number">1</span>);</span><br><span class="line">  </span><br><span class="line">    <span class="comment">// 第1个线程不可以返回</span></span><br><span class="line">    <span class="comment">// stdio.moveCursor(0);</span></span><br><span class="line">    <span class="comment">// for (int i = 0; i &lt; 25 * 80; ++i)</span></span><br><span class="line">    <span class="comment">// &#123;</span></span><br><span class="line">    <span class="comment">//     stdio.print(&#x27; &#x27;);</span></span><br><span class="line">    <span class="comment">// &#125;</span></span><br><span class="line">    <span class="comment">// stdio.moveCursor(0);</span></span><br><span class="line"></span><br><span class="line">    <span class="type">char</span> *p1 = (<span class="type">char</span> *)memoryManager.<span class="built_in">allocatePages</span>(AddressPoolType::KERNEL, <span class="number">1</span>);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;thread1 %x\n&quot;</span>,p1);</span><br></pre></td></tr></table></figure>
+
+<p><img src="/2024/05/20/oslab7/oslab7/1717376584481.png" alt="1717376584481"></p>
+<p>改正后的结果：</p>
+<p><img src="/2024/05/20/oslab7/oslab7/1717348305387.png" alt="1717348305387"></p>
+<h3 id="Assignment-4-2"><a href="#Assignment-4-2" class="headerlink" title="Assignment 4"></a>Assignment 4</h3><p>LRU算法，引用串为7,0,1,2,0,3,0,4,2,3，可用帧为3时的结果</p>
+<p><img src="/2024/05/20/oslab7/oslab7/1717347573550.png" alt="1717347573550"></p>
+<h2 id="5-总结"><a href="#5-总结" class="headerlink" title="5. 总结"></a>5. <strong>总结</strong></h2><p>   通过这次实验，我更加深刻认识到内存管理的重要意义，了解了二级页表的实现机制。了解了位图，内存池等相关概念和实现。了解了虚拟内存管理机制，页内存的分配和释放过程，最后实现用FIFO算法实现了页面置换。用LRU算法在win环境下模拟了页面置换的过程。</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2024/05/06/oslab6/" rel="prev" title="">
+      <i class="fa fa-chevron-left"></i> 
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2024/07/12/oslab9/" rel="next" title="">
+       <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C%E5%90%8D%E7%A7%B0-Lab7-%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86"><span class="nav-number">1.</span> <span class="nav-text">实验名称:          Lab7 内存管理</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-%E5%AE%9E%E9%AA%8C%E8%A6%81%E6%B1%82"><span class="nav-number">1.1.</span> <span class="nav-text">1. 实验要求</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Assignment-1"><span class="nav-number">1.1.1.</span> <span class="nav-text">Assignment 1</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Assignment-2"><span class="nav-number">1.1.2.</span> <span class="nav-text">Assignment 2</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Assignment-3"><span class="nav-number">1.1.3.</span> <span class="nav-text">Assignment 3</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Assignment-4"><span class="nav-number">1.1.4.</span> <span class="nav-text">Assignment 4</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-%E5%AE%9E%E9%AA%8C%E8%BF%87%E7%A8%8B"><span class="nav-number">1.2.</span> <span class="nav-text">2. 实验过程</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Assignment1"><span class="nav-number">1.2.1.</span> <span class="nav-text">Assignment1</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Assignment2"><span class="nav-number">1.2.2.</span> <span class="nav-text">Assignment2</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Assignment3"><span class="nav-number">1.2.3.</span> <span class="nav-text">Assignment3</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Assignment-4-1"><span class="nav-number">1.2.4.</span> <span class="nav-text">Assignment 4</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-%E5%85%B3%E9%94%AE%E4%BB%A3%E7%A0%81"><span class="nav-number">1.3.</span> <span class="nav-text">3. 关键代码</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-%E5%AE%9E%E9%AA%8C%E7%BB%93%E6%9E%9C"><span class="nav-number">1.4.</span> <span class="nav-text">4. 实验结果</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Assignment-2-1"><span class="nav-number">1.5.</span> <span class="nav-text">Assignment 2</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Assignment-3-1"><span class="nav-number">1.5.1.</span> <span class="nav-text">Assignment 3</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Assignment-4-2"><span class="nav-number">1.5.2.</span> <span class="nav-text">Assignment 4</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#5-%E6%80%BB%E7%BB%93"><span class="nav-number">1.6.</span> <span class="nav-text">5. 总结</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">zyh</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">9</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">1</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2024</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">zyh</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://muse.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.1.1">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Muse","version":"7.8.0","exturl":false,"sidebar":{"position":"left","Sidebar Display (only for Muse | Mist), available values":["always  expand for all pages automatically."],"display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="本科生实验报告 实验课程:					操作系统 实验名称:          Lab2 实验入门1. 实验要求任务1：1.1根据Example1教程，复现Example 1。 1.2修改Example 1的代码，使得MBR被加载到0x7C00后在(12,12)处开始输出你的学号。注意，学号显示的前景色和背景色必须和教程中不同。 任务2：2.1请探索实模式下的光标中断int 10h， 实现将光标移动至">
+<meta property="og:type" content="article">
+<meta property="og:title" content="SYSU-2024操作系统lab2实验">
+<meta property="og:url" content="http://example.com/2024/03/24/oslab2/index.html">
+<meta property="og:site_name" content="yhzhuang">
+<meta property="og:description" content="本科生实验报告 实验课程:					操作系统 实验名称:          Lab2 实验入门1. 实验要求任务1：1.1根据Example1教程，复现Example 1。 1.2修改Example 1的代码，使得MBR被加载到0x7C00后在(12,12)处开始输出你的学号。注意，学号显示的前景色和背景色必须和教程中不同。 任务2：2.1请探索实模式下的光标中断int 10h， 实现将光标移动至">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/2024/03/24/oslab2/wps17.jpg">
+<meta property="og:image" content="http://example.com/2024/03/24/oslab2/wps18.jpg">
+<meta property="og:image" content="http://example.com/2024/03/24/oslab2/wps19.jpg">
+<meta property="og:image" content="http://example.com/2024/03/24/oslab2/wps20.jpg">
+<meta property="og:image" content="http://example.com/2024/03/24/oslab2/wps21.jpg">
+<meta property="og:image" content="http://example.com/2024/03/24/oslab2/wps22.png">
+<meta property="og:image" content="http://example.com/2024/03/24/oslab2/wps23.jpg">
+<meta property="og:image" content="http://example.com/2024/03/24/oslab2/wps24.jpg">
+<meta property="article:published_time" content="2024-03-24T15:54:26.000Z">
+<meta property="article:modified_time" content="2024-04-07T14:15:33.541Z">
+<meta property="article:author" content="zyh">
+<meta property="article:tag" content="os">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/2024/03/24/oslab2/wps17.jpg">
+
+<link rel="canonical" href="http://example.com/2024/03/24/oslab2/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>SYSU-2024操作系统lab2实验 | yhzhuang</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">yhzhuang</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-resources">
+
+    <a href="/resources/" rel="section"><i class="download fa-fw"></i>resources</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2024/03/24/oslab2/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="zyh">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="yhzhuang">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          SYSU-2024操作系统lab2实验
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2024-03-24 23:54:26" itemprop="dateCreated datePublished" datetime="2024-03-24T23:54:26+08:00">2024-03-24</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2024-04-07 22:15:33" itemprop="dateModified" datetime="2024-04-07T22:15:33+08:00">2024-04-07</time>
+              </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>本科生实验报告</p>
+<p>实验课程:					操作系统</p>
+<h1 id="实验名称-Lab2-实验入门"><a href="#实验名称-Lab2-实验入门" class="headerlink" title="实验名称:          Lab2 实验入门"></a>实验名称:          Lab2 实验入门</h1><h2 id="1-实验要求"><a href="#1-实验要求" class="headerlink" title="1. 实验要求"></a>1. <strong>实验要求</strong></h2><h3 id="任务1："><a href="#任务1：" class="headerlink" title="任务1："></a><strong>任务1：</strong></h3><h4 id="1-1"><a href="#1-1" class="headerlink" title="1.1"></a><strong>1.1</strong></h4><p>根据Example1教程，复现Example 1。</p>
+<h4 id="1-2"><a href="#1-2" class="headerlink" title="1.2"></a><strong>1.2</strong></h4><p>修改Example 1的代码，使得MBR被加载到0x7C00后在(12,12)处开始输出你的学号。注意，学号显示的前景色和背景色必须和教程中不同。</p>
+<h3 id="任务2："><a href="#任务2：" class="headerlink" title="任务2："></a><strong>任务2：</strong></h3><h4 id="2-1"><a href="#2-1" class="headerlink" title="2.1"></a><strong>2.1</strong></h4><p>请探索实模式下的光标中断<strong>int 10h</strong>， 实现将光标移动至(8,8)，获取并输出光标的位置 。说说你是怎么做的，并将结果截图。</p>
+<h4 id="2-2"><a href="#2-2" class="headerlink" title="2.2"></a><strong>2.2</strong></h4><p>利用实模式下的中断， <strong>从</strong>(8,8)开始输出你的学号 。说说你是怎么做的，并将结果截图。</p>
+<span id="more"></span>
+
+<h4 id="2-3"><a href="#2-3" class="headerlink" title="2.3"></a><strong>2.3</strong></h4><p>参考《汇编语言》第17章、<a href="https://gitee.com/link?target=https://blog.csdn.net/deniece1/article/details/103447413">键盘<strong>I&#x2F;O中断调用</strong></a>。关于键盘扫描码，可以参考<a href="https://gitee.com/link?target=http://blog.sina.com.cn/s/blog_1511e79950102x2b0.html">键盘扫描码表</a>。</p>
+<p>在2.1和2.2的知识的基础上，探索实模式下的键盘中断<strong>int 16h</strong>， <strong>利用键盘中断，实现任意键盘输入并回显的效果</strong> 。说说你是怎么做的，并将结果截图。</p>
+<h3 id="任务3"><a href="#任务3" class="headerlink" title="任务3:"></a><strong>任务3:</strong></h3><p>· 任务3的寄存器请使用32位的寄存器。</p>
+<p>· 首先执行命令<strong>sudo apt install gcc-multilib g++-multilib</strong>安装相应环境。</p>
+<p>· 你需要补全的代码文件在<strong>assignment&#x2F;student.asm</strong>中。</p>
+<p>· 编写好代码后，在目录<strong>assignment</strong>下使用命令<strong>make run</strong>即可测试代码，不需要放到mbr中使用qemu启动。</p>
+<p>· <strong>a1</strong>、<strong>if_flag</strong>、<strong>my_random</strong>等都是预先定义好的变量和函数，直接使用即可。</p>
+<p>· 你可以修改<strong>test.cpp</strong>中的<strong>student_setting</strong>中的语句来得到你想要的<strong>a1,a2</strong>。</p>
+<p>· 最后附上<strong>make run</strong>的结果截图，并说说你是怎么做的。</p>
+<p>即用汇编实现分支逻辑，循环逻辑和函数</p>
+<h3 id="任务4："><a href="#任务4：" class="headerlink" title="任务4："></a><strong>任务4：</strong></h3><p>字符弹射程序。请编写一个字符弹射程序，其从点(2,0)<br>处开始向右下角45度开始射出，遇到边界反弹，反弹后按45度角射出，方向视反弹位置而定。同时，你可以加入一些其他效果，如变色，双向射出等。注意，你的程序应该不超过510字节，否则无法放入MBR中被加载执行。</p>
+<h2 id="2-实验过程"><a href="#2-实验过程" class="headerlink" title="2. 实验过程"></a>2. <strong>实验过程</strong></h2><h4 id="任务1：-1"><a href="#任务1：-1" class="headerlink" title="任务1："></a><strong>任务1：</strong></h4><p>根据lab2中的提示，处理器将显示矩阵映射到内存地址0xB8000~0xBFFFF处，即显示矩阵的点(x,y)对应的显存起始位置&#x3D;0xB8000+2⋅(80⋅x+y) 我们初始化段寄存器为0xb800在al中放入要输出的字符，ah中的值表示前景色和背景色属性。然后把ax的值移到对应的显存位置进行输出。</p>
+<p>在写完程序后，在终端中输入如下指令：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">nasm -f bin mbr.asm -o mbr.bin</span><br><span class="line"></span><br><span class="line">qemu-img create hd.img 10m</span><br><span class="line"></span><br><span class="line">dd if=mbr.bin of=hd.img bs=512 count=1 seek=0 conv=notrunc</span><br><span class="line"></span><br><span class="line">qemu-system-i386 -hda hd.img -serial null -parallel stdio</span><br></pre></td></tr></table></figure>
+
+<p>观察结果</p>
+<p>修改前景色和背景色，使用mov ah, 0b01110100;红色字白色背景</p>
+<h4 id="任务2：-1"><a href="#任务2：-1" class="headerlink" title="任务2："></a><strong>任务2：</strong></h4><h5 id="2-1-1"><a href="#2-1-1" class="headerlink" title="2.1"></a>2.1</h5><p>在dh中放行号,dl中放列号，调用int 10h ah&#x3D;2设置光标位置，将其输出</p>
+<h5 id="2-2-1"><a href="#2-2-1" class="headerlink" title="2.2"></a>2.2</h5><p>按照2.1中的方法设置光标位置，然后在光标处按照assignment1中的方法输出</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">mov ah,2    ;功能号</span><br><span class="line"></span><br><span class="line">mov bh,0    ;第0页</span><br><span class="line"></span><br><span class="line">mov dh,8    ;dh中放行号</span><br><span class="line"></span><br><span class="line">mov dl,8    ;dl中放列号</span><br><span class="line"></span><br><span class="line">int 10h</span><br></pre></td></tr></table></figure>
+
+<h5 id="2-3-1"><a href="#2-3-1" class="headerlink" title="2.3"></a>2.3</h5><p>了解int 0x16功能，按键操作（即键盘缓冲区不空），则ZF＝0，AL中存放的是输入的ASCII码，AH中存放输入字符的扩展码。若无键按下，则标志位ZF＝1</p>
+<p>如果有键按下则使用ah &#x3D; 2，int 0x10设置光标位置，在当前位置调用 ah &#x3D; 9，int 0x10在当前位置写字符</p>
+<h4 id="任务3-编写分支，循环和函数"><a href="#任务3-编写分支，循环和函数" class="headerlink" title="任务3.编写分支，循环和函数"></a><strong>任务3.编写分支，循环和函数</strong></h4><p>按照题目要求实现即可有一些要注意的地方比如</p>
+<p>字符串每个元素使char类型，比较的时候要取的是一个byte进行比较</p>
+<p>比如在函数中的循环中有pushad要先popad再进行放在通用寄存器中的循环遍量的自增。</p>
+<p><img src="/2024/03/24/oslab2/wps17.jpg"></p>
+<p>然后<strong>makerun</strong>运行</p>
+<h4 id="任务4：-1"><a href="#任务4：-1" class="headerlink" title="任务4："></a><strong>任务4：</strong></h4><p>根据字符弹射的规则，设置了右上右下左上左下四个函数分别用于移动，已经8个函数用于这四个状态之间的转换，print函数用于输出，每次输出后跳转到get_random函数，该函数产生的随机数用于字符和字符的前景色背景色，这个函数的实现参考了网上的代码</p>
+<h2 id="3-关键代码"><a href="#3-关键代码" class="headerlink" title="3. 关键代码"></a><strong>3. 关键代码</strong></h2><p>  实验3的代码</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br></pre></td><td class="code"><pre><span class="line">%include &quot;head.include&quot;</span><br><span class="line">your_if:</span><br><span class="line">    mov eax, [a1]</span><br><span class="line">    cmp eax, 12</span><br><span class="line">    jl less_than_12;左边小则跳转</span><br><span class="line">    ; Check if a1 &lt; 24</span><br><span class="line">    cmp eax, 24</span><br><span class="line">    jl less_than_24</span><br><span class="line">    ;if a1 &gt;24</span><br><span class="line">    ;if_flag = a1 &lt;&lt; 4;右移4位不是乘4shr后面是4不是2</span><br><span class="line">    shl eax,4; left move 4bits</span><br><span class="line">    mov [if_flag],eax</span><br><span class="line">    jmp your_while</span><br><span class="line">less_than_12:</span><br><span class="line">    ;if_flag = a1 / 2 + 1</span><br><span class="line">    sar eax,1</span><br><span class="line">    add eax,1</span><br><span class="line">    mov [if_flag],eax</span><br><span class="line">    jmp your_while</span><br><span class="line">less_than_24:</span><br><span class="line">    ;if_flag = (24 - a1) * a1</span><br><span class="line">    mov ecx,24</span><br><span class="line">    sub ecx,eax;OPRD1&lt;-- OPRD1-OPRD2</span><br><span class="line">    imul eax,ecx</span><br><span class="line">    mov [if_flag],eax</span><br><span class="line">    jmp your_while</span><br><span class="line"></span><br><span class="line">your_while:</span><br><span class="line"></span><br><span class="line">  mov ebx,[a2]</span><br><span class="line">;while a2 &gt;= 12 then</span><br><span class="line">;call my_random        // my_random将产生一个随机数放到eax中返回</span><br><span class="line">  cmp ebx,12</span><br><span class="line">  jl end_while</span><br><span class="line">  call my_random;jae</span><br><span class="line">  ;while_flag[a2 - 12] = eax</span><br><span class="line">  mov ecx, ebx;不要搞错mov的顺序</span><br><span class="line">  sub ecx,12</span><br><span class="line">  mov edx,[while_flag]</span><br><span class="line">  add edx,ecx</span><br><span class="line">  mov byte[edx],al</span><br><span class="line">  sub ebx,1	;--a2</span><br><span class="line">  mov [a2],ebx</span><br><span class="line">  jmp your_while</span><br><span class="line"></span><br><span class="line">your_function:</span><br><span class="line">	mov eax, 0</span><br><span class="line">	mov edx, [your_string]</span><br><span class="line">	mov ebx, 0</span><br><span class="line">	cmp [edx], ebx</span><br><span class="line">	je endFunction</span><br><span class="line">end_while:</span><br><span class="line">%include &quot;end.include&quot;</span><br><span class="line">forLoop:</span><br><span class="line">	pushad</span><br><span class="line">	mov edx, [edx + eax]</span><br><span class="line">	push edx</span><br><span class="line">	call print_a_char</span><br><span class="line">	pop edx</span><br><span class="line">	popad</span><br><span class="line">	inc eax</span><br><span class="line"></span><br><span class="line">	;; mov ecx, [edx]</span><br><span class="line"></span><br><span class="line">	cmp byte [edx + eax], 0</span><br><span class="line">	jne forLoop</span><br><span class="line">endFunction:</span><br></pre></td></tr></table></figure>
+
+<p>实验四的关键代码：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br></pre></td><td class="code"><pre><span class="line">next_position:</span><br><span class="line">    dec word[count]</span><br><span class="line">    cmp word[count], 0</span><br><span class="line">    jne next_position;不为0时count递减</span><br><span class="line">    mov word[count],delay</span><br><span class="line">    call my_random</span><br><span class="line">    cmp byte[status],1</span><br><span class="line">    je DnRt;跳转到往右下走的函数</span><br><span class="line">    cmp byte[status],2</span><br><span class="line">    je UpRt</span><br><span class="line">    cmp byte[status],3</span><br><span class="line">    je DnLt</span><br><span class="line">    cmp byte[status],4</span><br><span class="line">    je UpLt</span><br><span class="line"></span><br><span class="line">my_random:;产生随机数</span><br><span class="line">    rdtsc;获取时钟计数器值，高位放edx,低位放eax</span><br><span class="line">    mov ecx, 10</span><br><span class="line">    idiv ecx;ecx/IDIV余数和被除数符号相同.被除数为edx eax,为余数放edx</span><br><span class="line">    mov ebx, edx</span><br><span class="line">    add ebx, 48</span><br><span class="line">    rdtsc</span><br><span class="line">    mov ecx, 256</span><br><span class="line">    idiv ecx</span><br><span class="line">    mov eax,ebx</span><br><span class="line">    mov ebx,edx</span><br><span class="line">    ret</span><br><span class="line">DnRt:;右下</span><br><span class="line">    inc word[x]</span><br><span class="line">    inc word[y]</span><br><span class="line">    cmp word[x],25</span><br><span class="line">    je dr_to_ur</span><br><span class="line">    cmp word[y],80</span><br><span class="line">    je dr_to_dl</span><br><span class="line">jmp print</span><br><span class="line">dr_to_ur:;右下转右上的函数</span><br><span class="line">    mov word[x], 24</span><br><span class="line">    dec word[y]</span><br><span class="line">    mov byte[status], 2</span><br><span class="line">    jmp next_position</span><br><span class="line">dr_to_dl:;右下转左下</span><br><span class="line">    mov word[y],79</span><br><span class="line">    dec word[x]</span><br><span class="line">    mov byte[status], 3</span><br><span class="line">jmp next_position</span><br><span class="line">;其他方位与这里类似，略去了</span><br><span class="line">	print:输出字符</span><br><span class="line">;置光标位置</span><br><span class="line"></span><br><span class="line">    mov ah,2    ;功能号</span><br><span class="line">    mov bh,0    ;第0页</span><br><span class="line">    mov dh, byte[x]</span><br><span class="line">    mov dl, byte[y]</span><br><span class="line">int 10h</span><br><span class="line">;输出字符</span><br><span class="line">    mov ah, 9</span><br><span class="line">    ;mov al,&#x27;a&#x27;    ;设置字符</span><br><span class="line">    mov bh, 0</span><br><span class="line">    ;mov bl, 7</span><br><span class="line">    mov cx, 1</span><br><span class="line">    int 10h</span><br><span class="line">    </span><br><span class="line">    mov bh, 0</span><br><span class="line">    mov cl, 80</span><br><span class="line">    sub cl,dl</span><br><span class="line">    mov dl,cl</span><br><span class="line">    mov cx, 25</span><br><span class="line">    sub cl,dh</span><br><span class="line">    mov dh,cl</span><br><span class="line">    mov cl,1</span><br><span class="line">    mov ah, 2</span><br><span class="line">    int 10h</span><br><span class="line">    mov ah,9</span><br><span class="line">    int 10h</span><br><span class="line">    jmp next_position</span><br><span class="line">end:</span><br><span class="line">  jmp $</span><br></pre></td></tr></table></figure>
+
+<h2 id="4-实验结果"><a href="#4-实验结果" class="headerlink" title="4.实验结果"></a><strong>4.实验结果</strong></h2><h4 id="1-1-1"><a href="#1-1-1" class="headerlink" title="1.1"></a>1.1</h4><p><img src="/2024/03/24/oslab2/wps18.jpg"></p>
+<h4 id="1-2-1"><a href="#1-2-1" class="headerlink" title="1.2"></a>1.2</h4><p><img src="/2024/03/24/oslab2/wps19.jpg"></p>
+<h4 id="2-1-2"><a href="#2-1-2" class="headerlink" title="2.1"></a>2.1</h4><p>设置并输出光标位置</p>
+<p><img src="/2024/03/24/oslab2/wps20.jpg"></p>
+<!--这是正确的格式-->
+
+<h4 id="2-2-2"><a href="#2-2-2" class="headerlink" title="2.2"></a>2.2</h4><p>从光标位置开始输出学号</p>
+<p><img src="/2024/03/24/oslab2/wps21.jpg"></p>
+<!--前面加上/在网页也是正确的格式，然而在本地不能显示-->
+
+<h4 id="2-3-2"><a href="#2-3-2" class="headerlink" title="2.3"></a>2.3</h4><p>键盘回显输出</p>
+<p><img src="/2024/03/24/oslab2/wps22.png"></p>
+<!--这同样是正确的格式-->
+
+<h4 id="3"><a href="#3" class="headerlink" title="3."></a>3.</h4><p><img src="/2024/03/24/oslab2/wps23.jpg"></p>
+<h4 id="4"><a href="#4" class="headerlink" title="4."></a>4.</h4><p><img src="/2024/03/24/oslab2/wps24.jpg"></p>
+<!--<video src="../../../../Desktop/md.mp4"></video>-->
+
+<h2 id="5-总结"><a href="#5-总结" class="headerlink" title="5. 总结"></a>5. <strong>总结</strong></h2><p>通过这次实验，我学习了x86汇编，了解了x86寄存器实验，通过汇编实现了基本的判断循环逻辑和函数，学习了显存、光标和输出的原理</p>
+<p>实验中有许多需要注意的问题</p>
+<p>cmp比较变量和寄存器数字时要把指定变量的字节数，否则回出现error: operation size not specified的错误</p>
+<p>要注意call和ret的区别call会把他的下一条指令的地址压入s堆栈，然后跳转到他调用的开始处，同时ret会自动弹出返回地址。</p>
+<p>JMP只是简单的跳转</p>
+<p>改进：再任务4中设置双射的效果时只是在输出的时候做了一个对称，即两者关于屏幕中间对称，后续可以改进使得两者是真正是不相关的。</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/os/" rel="tag"># os</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2024/03/23/image/assemble-learning/" rel="prev" title="汇编学习">
+      <i class="fa fa-chevron-left"></i> 汇编学习
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2024/04/07/oslab3/" rel="next" title="SYSU-2024操作系统lab3实验">
+      SYSU-2024操作系统lab3实验 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C%E5%90%8D%E7%A7%B0-Lab2-%E5%AE%9E%E9%AA%8C%E5%85%A5%E9%97%A8"><span class="nav-number">1.</span> <span class="nav-text">实验名称:          Lab2 实验入门</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-%E5%AE%9E%E9%AA%8C%E8%A6%81%E6%B1%82"><span class="nav-number">1.1.</span> <span class="nav-text">1. 实验要求</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%BB%E5%8A%A11%EF%BC%9A"><span class="nav-number">1.1.1.</span> <span class="nav-text">任务1：</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#1-1"><span class="nav-number">1.1.1.1.</span> <span class="nav-text">1.1</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#1-2"><span class="nav-number">1.1.1.2.</span> <span class="nav-text">1.2</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%BB%E5%8A%A12%EF%BC%9A"><span class="nav-number">1.1.2.</span> <span class="nav-text">任务2：</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#2-1"><span class="nav-number">1.1.2.1.</span> <span class="nav-text">2.1</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-2"><span class="nav-number">1.1.2.2.</span> <span class="nav-text">2.2</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-3"><span class="nav-number">1.1.2.3.</span> <span class="nav-text">2.3</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%BB%E5%8A%A13"><span class="nav-number">1.1.3.</span> <span class="nav-text">任务3:</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%BB%E5%8A%A14%EF%BC%9A"><span class="nav-number">1.1.4.</span> <span class="nav-text">任务4：</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-%E5%AE%9E%E9%AA%8C%E8%BF%87%E7%A8%8B"><span class="nav-number">1.2.</span> <span class="nav-text">2. 实验过程</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BB%BB%E5%8A%A11%EF%BC%9A-1"><span class="nav-number">1.2.0.1.</span> <span class="nav-text">任务1：</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BB%BB%E5%8A%A12%EF%BC%9A-1"><span class="nav-number">1.2.0.2.</span> <span class="nav-text">任务2：</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#2-1-1"><span class="nav-number">1.2.0.2.1.</span> <span class="nav-text">2.1</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#2-2-1"><span class="nav-number">1.2.0.2.2.</span> <span class="nav-text">2.2</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#2-3-1"><span class="nav-number">1.2.0.2.3.</span> <span class="nav-text">2.3</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BB%BB%E5%8A%A13-%E7%BC%96%E5%86%99%E5%88%86%E6%94%AF%EF%BC%8C%E5%BE%AA%E7%8E%AF%E5%92%8C%E5%87%BD%E6%95%B0"><span class="nav-number">1.2.0.3.</span> <span class="nav-text">任务3.编写分支，循环和函数</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BB%BB%E5%8A%A14%EF%BC%9A-1"><span class="nav-number">1.2.0.4.</span> <span class="nav-text">任务4：</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-%E5%85%B3%E9%94%AE%E4%BB%A3%E7%A0%81"><span class="nav-number">1.3.</span> <span class="nav-text">3. 关键代码</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-%E5%AE%9E%E9%AA%8C%E7%BB%93%E6%9E%9C"><span class="nav-number">1.4.</span> <span class="nav-text">4.实验结果</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#1-1-1"><span class="nav-number">1.4.0.1.</span> <span class="nav-text">1.1</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#1-2-1"><span class="nav-number">1.4.0.2.</span> <span class="nav-text">1.2</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-1-2"><span class="nav-number">1.4.0.3.</span> <span class="nav-text">2.1</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-2-2"><span class="nav-number">1.4.0.4.</span> <span class="nav-text">2.2</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-3-2"><span class="nav-number">1.4.0.5.</span> <span class="nav-text">2.3</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#3"><span class="nav-number">1.4.0.6.</span> <span class="nav-text">3.</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#4"><span class="nav-number">1.4.0.7.</span> <span class="nav-text">4.</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#5-%E6%80%BB%E7%BB%93"><span class="nav-number">1.5.</span> <span class="nav-text">5. 总结</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">zyh</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">9</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">1</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2024</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">zyh</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://muse.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>
